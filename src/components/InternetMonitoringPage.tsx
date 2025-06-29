@@ -144,11 +144,11 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-NG', {
-      style: 'currency',
-      currency: 'NGN'
-    }).format(amount);
+  const formatDataUsage = (amount: number) => {
+    if (amount >= 1000) {
+      return `${(amount / 1000).toFixed(2)} TB`;
+    }
+    return `${amount.toFixed(2)} GB`;
   };
 
   return (
@@ -167,7 +167,7 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
             <div className="flex items-center gap-3">
               <Wifi className="w-8 h-8 text-blue-600" />
               <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Internet Monitoring
+                Internet Data Monitoring
               </h1>
             </div>
           </div>
@@ -214,9 +214,9 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
           <div className="bg-white rounded-xl shadow-lg p-6">
             <div className="flex items-center gap-3 mb-2">
               <TrendingUp className="w-5 h-5 text-red-600" />
-              <span className="text-sm font-medium text-gray-600">Total Usage</span>
+              <span className="text-sm font-medium text-gray-600">Total Data Used</span>
             </div>
-            <p className="text-2xl font-bold text-red-900">{formatCurrency(stats.totalUsage)}</p>
+            <p className="text-2xl font-bold text-red-900">{formatDataUsage(stats.totalUsage)}</p>
           </div>
 
           <div className="bg-white rounded-xl shadow-lg p-6">
@@ -224,7 +224,7 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
               <Calendar className="w-5 h-5 text-green-600" />
               <span className="text-sm font-medium text-gray-600">This Month</span>
             </div>
-            <p className="text-2xl font-bold text-green-900">{formatCurrency(stats.currentMonthUsage)}</p>
+            <p className="text-2xl font-bold text-green-900">{formatDataUsage(stats.currentMonthUsage)}</p>
           </div>
 
           <div className="bg-white rounded-xl shadow-lg p-6">
@@ -232,7 +232,7 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
               <Clock className="w-5 h-5 text-purple-600" />
               <span className="text-sm font-medium text-gray-600">Avg. Daily Usage</span>
             </div>
-            <p className="text-2xl font-bold text-purple-900">{formatCurrency(stats.averageUsage)}</p>
+            <p className="text-2xl font-bold text-purple-900">{formatDataUsage(stats.averageUsage)}</p>
           </div>
         </div>
 
@@ -264,7 +264,7 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Start Balance (₦)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Start Balance (GB)</label>
                 <input
                   type="number"
                   step="0.01"
@@ -277,7 +277,7 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">End Balance (₦)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">End Balance (GB)</label>
                 <input
                   type="number"
                   step="0.01"
@@ -337,7 +337,7 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
         <div className="bg-white rounded-xl shadow-lg p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold text-gray-800">
-              Internet Usage Records ({records.length})
+              Internet Data Usage Records ({records.length})
             </h2>
           </div>
 
@@ -355,7 +355,7 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Wifi className="w-8 h-8 text-gray-400" />
               </div>
-              <p className="text-gray-500 text-lg">No records yet. Add your first internet usage record!</p>
+              <p className="text-gray-500 text-lg">No records yet. Add your first internet data usage record!</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -365,7 +365,7 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
                     <th className="text-left py-3 px-4 font-medium text-gray-700">Date</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">Start Balance</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">End Balance</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-700">Usage</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-700">Data Used</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">Work Hours</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">Usage/Hour</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">Notes</th>
@@ -384,17 +384,17 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
                         })}
                       </td>
                       <td className="py-3 px-4 font-medium text-green-600">
-                        {formatCurrency(record.startBalance)}
+                        {formatDataUsage(record.startBalance)}
                       </td>
                       <td className="py-3 px-4 font-medium text-blue-600">
-                        {formatCurrency(record.endBalance)}
+                        {formatDataUsage(record.endBalance)}
                       </td>
                       <td className="py-3 px-4 font-medium text-red-600">
-                        {formatCurrency(record.usage)}
+                        {formatDataUsage(record.usage)}
                       </td>
                       <td className="py-3 px-4">{record.workHours}h</td>
                       <td className="py-3 px-4 text-purple-600 font-medium">
-                        {formatCurrency(record.usage / record.workHours)}
+                        {formatDataUsage(record.usage / record.workHours)}/h
                       </td>
                       <td className="py-3 px-4 text-gray-600 max-w-xs truncate">
                         {record.notes || '-'}

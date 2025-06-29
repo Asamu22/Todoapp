@@ -1,6 +1,13 @@
 import * as XLSX from 'xlsx';
 import { InternetRecord, InternetStats } from '../types/internet';
 
+const formatDataUsage = (amount: number) => {
+  if (amount >= 1000) {
+    return `${(amount / 1000).toFixed(2)} TB`;
+  }
+  return `${amount.toFixed(2)} GB`;
+};
+
 export const exportInternetDataToExcel = async (records: InternetRecord[], stats: InternetStats) => {
   // Prepare main data for Excel export
   const excelData = records.map((record, index) => ({
@@ -11,11 +18,11 @@ export const exportInternetDataToExcel = async (records: InternetRecord[], stats
       month: 'long',
       day: 'numeric'
     }),
-    'Start Balance (₦)': record.startBalance.toFixed(2),
-    'End Balance (₦)': record.endBalance.toFixed(2),
-    'Usage (₦)': record.usage.toFixed(2),
+    'Start Balance (GB)': record.startBalance.toFixed(2),
+    'End Balance (GB)': record.endBalance.toFixed(2),
+    'Data Used (GB)': record.usage.toFixed(2),
     'Work Hours': record.workHours,
-    'Usage per Hour (₦)': (record.usage / record.workHours).toFixed(2),
+    'Usage per Hour (GB)': (record.usage / record.workHours).toFixed(2),
     'Notes': record.notes || '',
     'Created': new Date(record.createdAt).toLocaleDateString(),
     'Last Updated': new Date(record.updatedAt).toLocaleDateString()
@@ -31,7 +38,7 @@ export const exportInternetDataToExcel = async (records: InternetRecord[], stats
     { wch: 20 },  // Date
     { wch: 15 },  // Start Balance
     { wch: 15 },  // End Balance
-    { wch: 12 },  // Usage
+    { wch: 12 },  // Data Used
     { wch: 12 },  // Work Hours
     { wch: 15 },  // Usage per Hour
     { wch: 30 },  // Notes
@@ -53,8 +60,8 @@ export const exportInternetDataToExcel = async (records: InternetRecord[], stats
     };
   }
 
-  // Add conditional formatting for usage amounts
-  const usageColIndex = 4; // Usage column (0-indexed)
+  // Add conditional formatting for data usage amounts
+  const usageColIndex = 4; // Data Used column (0-indexed)
   for (let row = 1; row <= excelData.length; row++) {
     const cellAddress = XLSX.utils.encode_cell({ r: row, c: usageColIndex });
     if (!worksheet[cellAddress]) continue;
@@ -63,10 +70,10 @@ export const exportInternetDataToExcel = async (records: InternetRecord[], stats
     let bgColor = "FEE2E2"; // Light red for high usage
     let textColor = "DC2626"; // Red text
     
-    if (usage < 500) {
+    if (usage < 5) {
       bgColor = "D1FAE5"; // Light green for low usage
       textColor = "059669"; // Green text
-    } else if (usage < 1000) {
+    } else if (usage < 15) {
       bgColor = "FEF3C7"; // Light yellow for medium usage
       textColor = "D97706"; // Yellow text
     }
@@ -79,16 +86,16 @@ export const exportInternetDataToExcel = async (records: InternetRecord[], stats
   }
 
   // Add the main worksheet to workbook
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Internet Records');
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Internet Data Records');
 
   // Create summary sheet
   const summaryData = [
     { Metric: 'Total Records', Value: stats.totalRecords },
-    { Metric: 'Total Usage (₦)', Value: stats.totalUsage.toFixed(2) },
-    { Metric: 'Average Daily Usage (₦)', Value: stats.averageUsage.toFixed(2) },
+    { Metric: 'Total Data Used (GB)', Value: stats.totalUsage.toFixed(2) },
+    { Metric: 'Average Daily Usage (GB)', Value: stats.averageUsage.toFixed(2) },
     { Metric: 'Average Work Hours', Value: stats.averageWorkHours.toFixed(1) },
-    { Metric: 'Current Month Usage (₦)', Value: stats.currentMonthUsage.toFixed(2) },
-    { Metric: 'Last Week Usage (₦)', Value: stats.lastWeekUsage.toFixed(2) },
+    { Metric: 'Current Month Usage (GB)', Value: stats.currentMonthUsage.toFixed(2) },
+    { Metric: 'Last Week Usage (GB)', Value: stats.lastWeekUsage.toFixed(2) },
     { Metric: 'Export Date', Value: new Date().toLocaleDateString() },
     { Metric: 'Export Time', Value: new Date().toLocaleTimeString() },
   ];
@@ -118,15 +125,15 @@ export const exportInternetDataToExcel = async (records: InternetRecord[], stats
     if (!acc[monthKey]) {
       acc[monthKey] = {
         Month: monthName,
-        'Total Usage (₦)': 0,
+        'Total Data Used (GB)': 0,
         'Total Work Hours': 0,
         'Number of Days': 0,
-        'Average Daily Usage (₦)': 0,
-        'Usage per Hour (₦)': 0
+        'Average Daily Usage (GB)': 0,
+        'Usage per Hour (GB)': 0
       };
     }
     
-    acc[monthKey]['Total Usage (₦)'] += record.usage;
+    acc[monthKey]['Total Data Used (GB)'] += record.usage;
     acc[monthKey]['Total Work Hours'] += record.workHours;
     acc[monthKey]['Number of Days'] += 1;
     
@@ -135,19 +142,19 @@ export const exportInternetDataToExcel = async (records: InternetRecord[], stats
 
   // Calculate averages for monthly data
   Object.values(monthlyData).forEach((month: any) => {
-    month['Average Daily Usage (₦)'] = (month['Total Usage (₦)'] / month['Number of Days']).toFixed(2);
-    month['Usage per Hour (₦)'] = (month['Total Usage (₦)'] / month['Total Work Hours']).toFixed(2);
-    month['Total Usage (₦)'] = month['Total Usage (₦)'].toFixed(2);
+    month['Average Daily Usage (GB)'] = (month['Total Data Used (GB)'] / month['Number of Days']).toFixed(2);
+    month['Usage per Hour (GB)'] = (month['Total Data Used (GB)'] / month['Total Work Hours']).toFixed(2);
+    month['Total Data Used (GB)'] = month['Total Data Used (GB)'].toFixed(2);
   });
 
   const monthlyWorksheet = XLSX.utils.json_to_sheet(Object.values(monthlyData));
   monthlyWorksheet['!cols'] = [
     { wch: 20 }, // Month
-    { wch: 15 }, // Total Usage
+    { wch: 18 }, // Total Data Used
     { wch: 15 }, // Total Work Hours
     { wch: 15 }, // Number of Days
     { wch: 20 }, // Average Daily Usage
-    { wch: 15 }, // Usage per Hour
+    { wch: 18 }, // Usage per Hour
   ];
 
   // Style monthly sheet header
@@ -169,7 +176,7 @@ export const exportInternetDataToExcel = async (records: InternetRecord[], stats
   const now = new Date();
   const dateStr = now.toISOString().split('T')[0];
   const timeStr = now.toTimeString().split(' ')[0].replace(/:/g, '-');
-  const filename = `internet-monitoring-${dateStr}-${timeStr}.xlsx`;
+  const filename = `internet-data-monitoring-${dateStr}-${timeStr}.xlsx`;
 
   // Write and download the file
   XLSX.writeFile(workbook, filename);
