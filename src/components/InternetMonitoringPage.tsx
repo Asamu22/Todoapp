@@ -32,12 +32,7 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
     notes: ''
   });
 
-  // Show export page if selected
-  if (showExportPage) {
-    return <InternetExportPage records={records} onBack={() => setShowExportPage(false)} />;
-  }
-
-  // Calculate statistics
+  // Calculate statistics - moved before conditional return
   const stats: InternetStats = useMemo(() => {
     const totalRecords = records.length;
     const totalUsage = records.reduce((sum, record) => sum + record.usage, 0);
@@ -68,6 +63,11 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
       lastWeekUsage
     };
   }, [records]);
+
+  // Show export page if selected
+  if (showExportPage) {
+    return <InternetExportPage records={records} onBack={() => setShowExportPage(false)} />;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
