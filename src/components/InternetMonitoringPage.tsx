@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ArrowLeft, Wifi, Plus, Download, Edit2, Trash2, Save, X, TrendingUp, Calendar, Clock, BarChart3 } from 'lucide-react';
+import { ArrowLeft, Wifi, Plus, Download, Edit2, Trash2, Save, X, TrendingUp, Calendar, Clock, BarChart3, AlertTriangle } from 'lucide-react';
 import { InternetRecord, InternetStats } from '../types/internet';
 import { useInternetRecords } from '../hooks/useInternetRecords';
 import { exportInternetDataToExcel } from '../utils/internetExcelExport';
@@ -15,6 +15,8 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   
   // Form states
   const [formData, setFormData] = useState({
@@ -59,18 +61,19 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setActionError(null);
     
     const startBalance = parseFloat(formData.startBalance);
     const endBalance = parseFloat(formData.endBalance);
     const workHours = parseFloat(formData.workHours);
     
     if (isNaN(startBalance) || isNaN(endBalance) || isNaN(workHours)) {
-      alert('Please enter valid numbers for all balance and work hours fields');
+      setActionError('Please enter valid numbers for all balance and work hours fields');
       return;
     }
     
     if (startBalance < endBalance) {
-      alert('Start balance should be greater than or equal to end balance');
+      setActionError('Start balance should be greater than or equal to end balance');
       return;
     }
 
@@ -103,8 +106,10 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
         workHours: '',
         notes: ''
       });
+      setActionError(null);
     } catch (err) {
       console.error('Error saving record:', err);
+      setActionError(err instanceof Error ? err.message : 'Failed to save record');
     }
   };
 
@@ -118,11 +123,13 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
     });
     setEditingId(record.id);
     setShowAddForm(true);
+    setActionError(null);
   };
 
   const handleCancelEdit = () => {
     setEditingId(null);
     setShowAddForm(false);
+    setActionError(null);
     setFormData({
       date: new Date().toISOString().split('T')[0],
       startBalance: '',
@@ -132,13 +139,37 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
     });
   };
 
+  const handleDelete = async (id: string) => {
+    const record = records.find(r => r.id === id);
+    if (!record) return;
+
+    const confirmMessage = `Are you sure you want to delete the record for ${new Date(record.date).toLocaleDateString()}?\n\nThis action cannot be undone.`;
+    
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+
+    setDeletingId(id);
+    setActionError(null);
+
+    try {
+      await deleteRecord(id);
+      console.log('Record deleted successfully');
+    } catch (err) {
+      console.error('Error deleting record:', err);
+      setActionError(err instanceof Error ? err.message : 'Failed to delete record');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   const handleExport = async () => {
     setIsExporting(true);
     try {
       await exportInternetDataToExcel(records, stats);
     } catch (error) {
       console.error('Export failed:', error);
-      alert('Export failed. Please try again.');
+      setActionError('Export failed. Please try again.');
     } finally {
       setIsExporting(false);
     }
@@ -200,6 +231,16 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
             </button>
           </div>
         </div>
+
+        {/* Error Display */}
+        {(error || actionError) && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-red-600" />
+              <p className="text-red-600">{error || actionError}</p>
+            </div>
+          </div>
+        )}
 
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -346,10 +387,6 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
               <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
               <p className="text-gray-500">Loading records...</p>
             </div>
-          ) : error ? (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <p className="text-red-600">{error}</p>
-            </div>
           ) : records.length === 0 ? (
             <div className="text-center py-12">
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -403,21 +440,23 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => handleEdit(record)}
-                            className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                            disabled={deletingId === record.id}
+                            className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors disabled:opacity-50"
                             title="Edit record"
                           >
                             <Edit2 className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => {
-                              if (confirm('Are you sure you want to delete this record?')) {
-                                deleteRecord(record.id);
-                              }
-                            }}
-                            className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                            onClick={() => handleDelete(record.id)}
+                            disabled={deletingId === record.id}
+                            className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
                             title="Delete record"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            {deletingId === record.id ? (
+                              <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+                            ) : (
+                              <Trash2 className="w-4 h-4" />
+                            )}
                           </button>
                         </div>
                       </td>

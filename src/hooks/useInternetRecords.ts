@@ -85,6 +85,7 @@ export const useInternetRecords = (userId: string | null) => {
     } catch (err) {
       console.error('Error adding record:', err);
       setError(err instanceof Error ? err.message : 'Failed to add record');
+      throw err; // Re-throw to handle in component
     }
   };
 
@@ -125,24 +126,61 @@ export const useInternetRecords = (userId: string | null) => {
     } catch (err) {
       console.error('Error updating record:', err);
       setError(err instanceof Error ? err.message : 'Failed to update record');
+      throw err; // Re-throw to handle in component
     }
   };
 
   // Delete record
   const deleteRecord = async (id: string) => {
     try {
-      const { error } = await supabase
+      console.log('Attempting to delete record with ID:', id);
+      
+      // First verify the record exists and belongs to the user
+      const { data: existingRecord, error: fetchError } = await supabase
+        .from('internet_records')
+        .select('id, user_id')
+        .eq('id', id)
+        .eq('user_id', userId)
+        .single();
+
+      if (fetchError) {
+        console.error('Error fetching record for deletion:', fetchError);
+        throw new Error('Record not found or access denied');
+      }
+
+      if (!existingRecord) {
+        throw new Error('Record not found');
+      }
+
+      console.log('Record found, proceeding with deletion:', existingRecord);
+
+      // Perform the deletion
+      const { error: deleteError } = await supabase
         .from('internet_records')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('user_id', userId); // Double check user ownership
 
-      if (error) throw error;
+      if (deleteError) {
+        console.error('Error deleting record:', deleteError);
+        throw deleteError;
+      }
 
-      setRecords(prev => prev.filter(r => r.id !== id));
+      console.log('Record deleted successfully');
+
+      // Update local state
+      setRecords(prev => {
+        const newRecords = prev.filter(r => r.id !== id);
+        console.log('Updated records count:', newRecords.length);
+        return newRecords;
+      });
+      
       setError(null);
     } catch (err) {
-      console.error('Error deleting record:', err);
-      setError(err instanceof Error ? err.message : 'Failed to delete record');
+      console.error('Error in deleteRecord function:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to delete record';
+      setError(errorMessage);
+      throw new Error(errorMessage); // Re-throw to handle in component
     }
   };
 
