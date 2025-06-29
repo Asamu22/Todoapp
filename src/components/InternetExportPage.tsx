@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { ArrowLeft, Download, FileSpreadsheet, Calendar, Filter, TrendingUp, BarChart3 } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { InternetRecord, InternetStats } from '../types/internet';
 import { exportInternetDataToExcel } from '../utils/internetExcelExport';
 
@@ -124,7 +124,7 @@ export const InternetExportPage: React.FC<InternetExportPageProps> = ({ records,
     };
   }, [filteredRecords]);
 
-  // Prepare comprehensive chart data
+  // Prepare chart data
   const chartData = useMemo(() => {
     return filteredRecords
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
@@ -242,38 +242,33 @@ export const InternetExportPage: React.FC<InternetExportPageProps> = ({ records,
           </div>
         </div>
 
-        {/* Comprehensive Data Visualization Chart */}
+        {/* Simple Line Chart */}
         {chartData.length > 0 && (
           <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
             <div className="flex items-center gap-3 mb-6">
               <BarChart3 className="w-6 h-6 text-blue-600" />
-              <h2 className="text-xl font-semibold text-gray-800">Comprehensive Internet Data Analytics</h2>
+              <h2 className="text-xl font-semibold text-gray-800">Internet Data Analytics</h2>
             </div>
 
             <div className="w-full">
               <ResponsiveContainer width="100%" height={400}>
                 <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis 
                     dataKey="date" 
-                    stroke="#666"
+                    stroke="#6b7280"
                     fontSize={12}
                     angle={-45}
                     textAnchor="end"
                     height={80}
+                    axisLine={{ stroke: '#6b7280' }}
+                    tickLine={{ stroke: '#6b7280' }}
                   />
                   <YAxis 
-                    yAxisId="left"
-                    stroke="#666"
+                    stroke="#6b7280"
                     fontSize={12}
-                    label={{ value: 'Data (GB)', angle: -90, position: 'insideLeft' }}
-                  />
-                  <YAxis 
-                    yAxisId="right"
-                    orientation="right"
-                    stroke="#666"
-                    fontSize={12}
-                    label={{ value: 'Hours', angle: 90, position: 'insideRight' }}
+                    axisLine={{ stroke: '#6b7280' }}
+                    tickLine={{ stroke: '#6b7280' }}
                   />
                   <Tooltip 
                     contentStyle={{
@@ -300,95 +295,80 @@ export const InternetExportPage: React.FC<InternetExportPageProps> = ({ records,
                     }}
                     labelFormatter={(label) => `Date: ${label}`}
                   />
-                  <Legend 
-                    verticalAlign="top" 
-                    height={36}
-                    iconType="line"
-                  />
                   
-                  {/* Data Usage as Red Line */}
+                  {/* Data Usage - Red Line */}
                   <Line 
-                    yAxisId="left"
                     type="monotone" 
                     dataKey="usage" 
-                    stroke="#dc2626" 
-                    strokeWidth={4}
-                    name="Data Used (GB)"
-                    dot={{ fill: '#dc2626', strokeWidth: 2, r: 5 }}
-                    activeDot={{ r: 7, stroke: '#dc2626', strokeWidth: 2 }}
+                    stroke="#ef4444" 
+                    strokeWidth={3}
+                    dot={false}
+                    name="usage"
                   />
                   
-                  {/* Start Balance as Green Line */}
+                  {/* Start Balance - Green Line */}
                   <Line 
-                    yAxisId="left"
                     type="monotone" 
                     dataKey="startBalance" 
-                    stroke="#059669" 
-                    strokeWidth={3}
-                    name="Start Balance (GB)"
-                    dot={{ fill: '#059669', strokeWidth: 2, r: 4 }}
-                    activeDot={{ r: 6, stroke: '#059669', strokeWidth: 2 }}
+                    stroke="#22c55e" 
+                    strokeWidth={2}
+                    dot={false}
+                    name="startBalance"
                   />
                   
-                  {/* End Balance as Blue Line */}
+                  {/* End Balance - Blue Line */}
                   <Line 
-                    yAxisId="left"
                     type="monotone" 
                     dataKey="endBalance" 
-                    stroke="#2563eb" 
-                    strokeWidth={3}
-                    name="End Balance (GB)"
-                    dot={{ fill: '#2563eb', strokeWidth: 2, r: 4 }}
-                    activeDot={{ r: 6, stroke: '#2563eb', strokeWidth: 2 }}
+                    stroke="#3b82f6" 
+                    strokeWidth={2}
+                    dot={false}
+                    name="endBalance"
                   />
                   
-                  {/* Work Hours as Purple Dashed Line */}
+                  {/* Work Hours - Purple Line */}
                   <Line 
-                    yAxisId="right"
                     type="monotone" 
                     dataKey="workHours" 
-                    stroke="#7c3aed" 
+                    stroke="#8b5cf6" 
                     strokeWidth={2}
-                    name="Work Hours"
-                    dot={{ fill: '#7c3aed', strokeWidth: 2, r: 3 }}
-                    strokeDasharray="5 5"
+                    dot={false}
+                    name="workHours"
                   />
                   
-                  {/* Usage per Hour as Orange Dotted Line */}
+                  {/* Usage Rate - Orange Line */}
                   <Line 
-                    yAxisId="left"
                     type="monotone" 
                     dataKey="usagePerHour" 
-                    stroke="#f59e0b" 
+                    stroke="#f97316" 
                     strokeWidth={2}
-                    name="Usage Rate (GB/hour)"
-                    dot={{ fill: '#f59e0b', strokeWidth: 2, r: 3 }}
-                    strokeDasharray="3 3"
+                    dot={false}
+                    name="usagePerHour"
                   />
                 </LineChart>
               </ResponsiveContainer>
             </div>
 
-            {/* Chart Legend Explanation */}
-            <div className="mt-4 grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+            {/* Simple Legend */}
+            <div className="mt-4 flex flex-wrap justify-center gap-6 text-sm">
               <div className="flex items-center gap-2">
-                <div className="w-4 h-1 bg-red-600 rounded"></div>
+                <div className="w-6 h-0.5 bg-red-500"></div>
                 <span className="text-gray-700">Data Used</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-1 bg-green-600 rounded"></div>
+                <div className="w-6 h-0.5 bg-green-500"></div>
                 <span className="text-gray-700">Start Balance</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-1 bg-blue-600 rounded"></div>
+                <div className="w-6 h-0.5 bg-blue-500"></div>
                 <span className="text-gray-700">End Balance</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-1 bg-purple-600 rounded border-dashed border-2 border-purple-600"></div>
+                <div className="w-6 h-0.5 bg-purple-500"></div>
                 <span className="text-gray-700">Work Hours</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-1 bg-orange-600 rounded border-dotted border-2 border-orange-600"></div>
+                <div className="w-6 h-0.5 bg-orange-500"></div>
                 <span className="text-gray-700">Usage Rate</span>
               </div>
             </div>
