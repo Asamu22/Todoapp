@@ -45,6 +45,44 @@ export interface Database {
           completed_at?: string | null;
         };
       };
+      internet_records: {
+        Row: {
+          id: string;
+          user_id: string;
+          date: string;
+          start_balance: number;
+          end_balance: number;
+          usage: number;
+          work_hours: number;
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          date: string;
+          start_balance: number;
+          end_balance: number;
+          usage: number;
+          work_hours: number;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          date?: string;
+          start_balance?: number;
+          end_balance?: number;
+          usage?: number;
+          work_hours?: number;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
     };
   };
 }

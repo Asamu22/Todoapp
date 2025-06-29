@@ -1,12 +1,13 @@
 import React from 'react';
-import { CheckSquare, Bell, LogOut, Download } from 'lucide-react';
+import { CheckSquare, Bell, LogOut, Download, Wifi } from 'lucide-react';
 
 interface HeaderProps {
   onLogout: () => void;
   onExport: () => void;
+  onInternetMonitoring: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onLogout, onExport }) => {
+export const Header: React.FC<HeaderProps> = ({ onLogout, onExport, onInternetMonitoring }) => {
   return (
     <div className="text-center mb-8">
       <div className="flex items-center justify-center gap-3 mb-4 relative">
@@ -17,6 +18,15 @@ export const Header: React.FC<HeaderProps> = ({ onLogout, onExport }) => {
         <Bell className="w-6 h-6 text-purple-600" />
         
         <div className="absolute right-0 flex items-center gap-2">
+          <button
+            onClick={onInternetMonitoring}
+            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200"
+            title="Internet Monitoring"
+          >
+            <Wifi className="w-4 h-4" />
+            <span className="hidden sm:inline">Internet</span>
+          </button>
+          
           <button
             onClick={onExport}
             className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all duration-200"

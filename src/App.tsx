@@ -7,6 +7,7 @@ import { FilterBar } from './components/FilterBar';
 import { AuthPage } from './components/AuthPage';
 import { Header } from './components/Header';
 import { ExportPage } from './components/ExportPage';
+import { InternetMonitoringPage } from './components/InternetMonitoringPage';
 import { useNotifications } from './hooks/useNotifications';
 import { useSupabaseAuth } from './hooks/useSupabaseAuth';
 import { useTodos } from './hooks/useTodos';
@@ -20,7 +21,7 @@ function App() {
   const [selectedPriority, setSelectedPriority] = useState('All');
   const [showCompleted, setShowCompleted] = useState(true);
   const [dateFilter, setDateFilter] = useState('all');
-  const [currentView, setCurrentView] = useState<'tasks' | 'export'>('tasks');
+  const [currentView, setCurrentView] = useState<'tasks' | 'export' | 'internet'>('tasks');
 
   // Enable notifications only when authenticated
   useNotifications(user ? todos : []);
@@ -204,12 +205,21 @@ function App() {
     return <ExportPage todos={todos} onBack={() => setCurrentView('tasks')} />;
   }
 
+  // Show internet monitoring page if selected
+  if (currentView === 'internet') {
+    return <InternetMonitoringPage userId={user.id} onBack={() => setCurrentView('tasks')} />;
+  }
+
   // Show main application if authenticated
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
-        {/* Header with logout and export */}
-        <Header onLogout={signOut} onExport={() => setCurrentView('export')} />
+        {/* Header with logout, export, and internet monitoring */}
+        <Header 
+          onLogout={signOut} 
+          onExport={() => setCurrentView('export')}
+          onInternetMonitoring={() => setCurrentView('internet')}
+        />
 
         {/* Progress Chart */}
         <ProgressChart 
