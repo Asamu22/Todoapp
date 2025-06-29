@@ -1,8 +1,14 @@
 # Daily Activity Tracker
 
-A modern, feature-rich todo list application designed to help you organize and track your daily activities with smart notifications and comprehensive progress analytics.
+A modern, feature-rich todo list application designed to help you organize and track your daily activities with smart notifications, comprehensive progress analytics, and secure authentication.
 
 ## Features
+
+### 🔐 Secure Authentication
+- **Login Protection**: Secure access to your personal task management system
+- **Session Management**: Stay logged in across browser sessions
+- **Password Security**: Secure credential handling with password visibility toggle
+- **Auto-logout**: Clean session management with secure logout functionality
 
 ### 📝 Task Management
 - **Create Tasks**: Add tasks with titles, descriptions, categories, and priority levels
@@ -31,7 +37,7 @@ A modern, feature-rich todo list application designed to help you organize and t
 
 ### 💾 Data Persistence
 - **Local Storage**: All data is automatically saved to your browser's local storage
-- **No Account Required**: Use the app without any registration or login
+- **Secure Sessions**: Authentication state persists between browser sessions
 - **Data Recovery**: Your tasks persist between browser sessions
 
 ### 🎨 Modern UI/UX
@@ -39,6 +45,7 @@ A modern, feature-rich todo list application designed to help you organize and t
 - **Beautiful Gradients**: Modern color schemes with smooth transitions
 - **Interactive Elements**: Hover effects and micro-interactions throughout
 - **Clean Layout**: Intuitive interface with clear visual hierarchy
+- **Loading States**: Smooth loading animations and feedback
 
 ## Getting Started
 
@@ -67,6 +74,11 @@ A modern, feature-rich todo list application designed to help you organize and t
 4. **Open your browser**
    Navigate to `http://localhost:5173` to view the application
 
+5. **Login to access the application**
+   - The application requires authentication to access
+   - Use the provided credentials to sign in
+   - Your session will be remembered for future visits
+
 ### Build for Production
 
 To create a production build:
@@ -78,6 +90,12 @@ npm run build
 The built files will be in the `dist` directory, ready for deployment.
 
 ## Usage
+
+### Authentication
+1. Open the application in your browser
+2. Enter your credentials on the login page
+3. Click "Sign In" to access the main application
+4. Use the "Sign Out" button in the header when you're done
 
 ### Adding Tasks
 1. Fill in the task title (required)
@@ -103,6 +121,13 @@ The built files will be in the `dist` directory, ready for deployment.
 - Receive alerts 5 minutes before task due times
 - See visual indicators for overdue tasks
 
+## Security Features
+
+- **Protected Access**: Application requires authentication to access any features
+- **Session Security**: Secure session management with automatic cleanup
+- **Data Protection**: User data is protected behind authentication
+- **Secure Logout**: Complete session cleanup when signing out
+
 ## Technology Stack
 
 - **Frontend Framework**: React 18 with TypeScript
@@ -111,6 +136,7 @@ The built files will be in the `dist` directory, ready for deployment.
 - **Icons**: Lucide React
 - **Build Tool**: Vite
 - **Storage**: Browser Local Storage API
+- **Authentication**: Custom secure authentication system
 
 ## Browser Compatibility
 
@@ -118,6 +144,27 @@ This application works in all modern browsers that support:
 - ES2020 features
 - Local Storage API
 - Notification API (for alerts)
+- Modern CSS features (Grid, Flexbox, CSS Variables)
+
+## Project Structure
+
+```
+src/
+├── components/          # React components
+│   ├── LoginPage.tsx   # Authentication login page
+│   ├── Header.tsx      # Main application header
+│   ├── TodoForm.tsx    # Task creation form
+│   ├── TodoItem.tsx    # Individual task component
+│   ├── FilterBar.tsx   # Search and filter controls
+│   └── ProgressChart.tsx # Analytics and charts
+├── hooks/              # Custom React hooks
+│   ├── useAuth.ts      # Authentication management
+│   ├── useLocalStorage.ts # Local storage utilities
+│   └── useNotifications.ts # Notification system
+├── types/              # TypeScript type definitions
+│   └── todo.ts         # Task and data types
+└── App.tsx             # Main application component
+```
 
 ## Contributing
 
@@ -130,3 +177,7 @@ This application works in all modern browsers that support:
 ## License
 
 This project is open source and available under the [MIT License](LICENSE).
+
+## Support
+
+If you encounter any issues or have questions about using the Daily Activity Tracker, please create an issue in the repository or contact the development team.
