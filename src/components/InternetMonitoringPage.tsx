@@ -17,6 +17,11 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
   const [isExporting, setIsExporting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    show: boolean;
+    recordId: string;
+    recordDate: string;
+  }>({ show: false, recordId: '', recordDate: '' });
   
   // Form states
   const [formData, setFormData] = useState({
@@ -139,21 +144,31 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
     });
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDeleteClick = (id: string) => {
     const record = records.find(r => r.id === id);
     if (!record) return;
 
-    const confirmMessage = `Are you sure you want to delete the record for ${new Date(record.date).toLocaleDateString()}?\n\nThis action cannot be undone.`;
-    
-    if (!confirm(confirmMessage)) {
-      return;
-    }
+    setDeleteConfirmation({
+      show: true,
+      recordId: id,
+      recordDate: new Date(record.date).toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      })
+    });
+  };
 
-    setDeletingId(id);
+  const handleConfirmDelete = async () => {
+    const { recordId } = deleteConfirmation;
+    
+    setDeletingId(recordId);
     setActionError(null);
+    setDeleteConfirmation({ show: false, recordId: '', recordDate: '' });
 
     try {
-      await deleteRecord(id);
+      await deleteRecord(recordId);
       console.log('Record deleted successfully');
     } catch (err) {
       console.error('Error deleting record:', err);
@@ -161,6 +176,10 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
     } finally {
       setDeletingId(null);
     }
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteConfirmation({ show: false, recordId: '', recordDate: '' });
   };
 
   const handleExport = async () => {
@@ -231,6 +250,43 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
             </button>
           </div>
         </div>
+
+        {/* Delete Confirmation Modal */}
+        {deleteConfirmation.show && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                  <AlertTriangle className="w-6 h-6 text-red-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Confirm Deletion</h3>
+                  <p className="text-sm text-gray-500">This action cannot be undone</p>
+                </div>
+              </div>
+              
+              <p className="text-gray-700 mb-6">
+                Are you sure you want to delete the internet data record for{' '}
+                <span className="font-semibold text-gray-900">{deleteConfirmation.recordDate}</span>?
+              </p>
+              
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={handleCancelDelete}
+                  className="px-4 py-2 text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmDelete}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  Delete Record
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Error Display */}
         {(error || actionError) && (
@@ -447,7 +503,7 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
                             <Edit2 className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => handleDelete(record.id)}
+                            onClick={() => handleDeleteClick(record.id)}
                             disabled={deletingId === record.id}
                             className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
                             title="Delete record"
