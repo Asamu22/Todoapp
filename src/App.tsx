@@ -1,22 +1,25 @@
 import React, { useState, useMemo } from 'react';
-import { CheckSquare, Bell } from 'lucide-react';
 import { Todo, ProgressData } from './types/todo';
 import { TodoForm } from './components/TodoForm';
 import { TodoItem } from './components/TodoItem';
 import { ProgressChart } from './components/ProgressChart';
 import { FilterBar } from './components/FilterBar';
+import { LoginPage } from './components/LoginPage';
+import { Header } from './components/Header';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { useNotifications } from './hooks/useNotifications';
+import { useAuth } from './hooks/useAuth';
 
 function App() {
+  const { isAuthenticated, isLoading, login, logout } = useAuth();
   const [todos, setTodos] = useLocalStorage<Todo[]>('todos', []);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedPriority, setSelectedPriority] = useState('All');
   const [showCompleted, setShowCompleted] = useState(true);
 
-  // Enable notifications
-  useNotifications(todos);
+  // Enable notifications only when authenticated
+  useNotifications(isAuthenticated ? todos : []);
 
   const addTodo = (todoData: Omit<Todo, 'id' | 'createdAt' | 'completed'>) => {
     const newTodo: Todo = {
@@ -99,22 +102,29 @@ function App() {
     return { total, completed, todayProgress };
   }, [todos]);
 
+  // Show loading spinner while checking authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show login page if not authenticated
+  if (!isAuthenticated) {
+    return <LoginPage onLogin={login} />;
+  }
+
+  // Show main application if authenticated
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <CheckSquare className="w-8 h-8 text-blue-600" />
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              Daily Activity Tracker
-            </h1>
-            <Bell className="w-6 h-6 text-purple-600" />
-          </div>
-          <p className="text-gray-600 text-lg">
-            Organize your daily activities with smart notifications and progress tracking
-          </p>
-        </div>
+        {/* Header with logout */}
+        <Header onLogout={logout} />
 
         {/* Progress Chart */}
         <ProgressChart 
@@ -154,7 +164,9 @@ function App() {
 
           {filteredTodos.length === 0 ? (
             <div className="text-center py-12">
-              <CheckSquare className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl">📝</span>
+              </div>
               <p className="text-gray-500 text-lg">
                 {todos.length === 0 
                   ? "No tasks yet. Add your first task above!" 
