@@ -8,7 +8,11 @@ const formatDataUsage = (amount: number) => {
   return `${amount.toFixed(2)} GB`;
 };
 
-export const exportInternetDataToExcel = async (records: InternetRecord[], stats: InternetStats) => {
+export const exportInternetDataToExcel = async (
+  records: InternetRecord[], 
+  stats: InternetStats, 
+  filenameSuffix: string = ''
+) => {
   // Prepare main data for Excel export
   const excelData = records.map((record, index) => ({
     'No.': index + 1,
@@ -94,8 +98,7 @@ export const exportInternetDataToExcel = async (records: InternetRecord[], stats
     { Metric: 'Total Data Used (GB)', Value: stats.totalUsage.toFixed(2) },
     { Metric: 'Average Daily Usage (GB)', Value: stats.averageUsage.toFixed(2) },
     { Metric: 'Average Work Hours', Value: stats.averageWorkHours.toFixed(1) },
-    { Metric: 'Current Month Usage (GB)', Value: stats.currentMonthUsage.toFixed(2) },
-    { Metric: 'Last Week Usage (GB)', Value: stats.lastWeekUsage.toFixed(2) },
+    { Metric: 'Period Usage (GB)', Value: stats.totalUsage.toFixed(2) },
     { Metric: 'Export Date', Value: new Date().toLocaleDateString() },
     { Metric: 'Export Time', Value: new Date().toLocaleTimeString() },
   ];
@@ -116,7 +119,7 @@ export const exportInternetDataToExcel = async (records: InternetRecord[], stats
 
   XLSX.utils.book_append_sheet(workbook, summaryWorksheet, 'Summary');
 
-  // Create monthly breakdown sheet
+  // Create monthly breakdown sheet if we have multiple months
   const monthlyData = records.reduce((acc, record) => {
     const date = new Date(record.date);
     const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
@@ -140,43 +143,46 @@ export const exportInternetDataToExcel = async (records: InternetRecord[], stats
     return acc;
   }, {} as Record<string, any>);
 
-  // Calculate averages for monthly data
-  Object.values(monthlyData).forEach((month: any) => {
-    month['Average Daily Usage (GB)'] = (month['Total Data Used (GB)'] / month['Number of Days']).toFixed(2);
-    month['Usage per Hour (GB)'] = (month['Total Data Used (GB)'] / month['Total Work Hours']).toFixed(2);
-    month['Total Data Used (GB)'] = month['Total Data Used (GB)'].toFixed(2);
-  });
+  // Only create monthly breakdown if we have data from multiple periods
+  if (Object.keys(monthlyData).length > 0) {
+    // Calculate averages for monthly data
+    Object.values(monthlyData).forEach((month: any) => {
+      month['Average Daily Usage (GB)'] = (month['Total Data Used (GB)'] / month['Number of Days']).toFixed(2);
+      month['Usage per Hour (GB)'] = (month['Total Data Used (GB)'] / month['Total Work Hours']).toFixed(2);
+      month['Total Data Used (GB)'] = month['Total Data Used (GB)'].toFixed(2);
+    });
 
-  const monthlyWorksheet = XLSX.utils.json_to_sheet(Object.values(monthlyData));
-  monthlyWorksheet['!cols'] = [
-    { wch: 20 }, // Month
-    { wch: 18 }, // Total Data Used
-    { wch: 15 }, // Total Work Hours
-    { wch: 15 }, // Number of Days
-    { wch: 20 }, // Average Daily Usage
-    { wch: 18 }, // Usage per Hour
-  ];
+    const monthlyWorksheet = XLSX.utils.json_to_sheet(Object.values(monthlyData));
+    monthlyWorksheet['!cols'] = [
+      { wch: 20 }, // Month
+      { wch: 18 }, // Total Data Used
+      { wch: 15 }, // Total Work Hours
+      { wch: 15 }, // Number of Days
+      { wch: 20 }, // Average Daily Usage
+      { wch: 18 }, // Usage per Hour
+    ];
 
-  // Style monthly sheet header
-  const monthlyHeaderRange = XLSX.utils.decode_range(monthlyWorksheet['!ref'] || 'A1');
-  for (let col = monthlyHeaderRange.s.c; col <= monthlyHeaderRange.e.c; col++) {
-    const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col });
-    if (!monthlyWorksheet[cellAddress]) continue;
-    
-    monthlyWorksheet[cellAddress].s = {
-      font: { bold: true, color: { rgb: "FFFFFF" } },
-      fill: { fgColor: { rgb: "7C3AED" } },
-      alignment: { horizontal: "center", vertical: "center" }
-    };
+    // Style monthly sheet header
+    const monthlyHeaderRange = XLSX.utils.decode_range(monthlyWorksheet['!ref'] || 'A1');
+    for (let col = monthlyHeaderRange.s.c; col <= monthlyHeaderRange.e.c; col++) {
+      const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col });
+      if (!monthlyWorksheet[cellAddress]) continue;
+      
+      monthlyWorksheet[cellAddress].s = {
+        font: { bold: true, color: { rgb: "FFFFFF" } },
+        fill: { fgColor: { rgb: "7C3AED" } },
+        alignment: { horizontal: "center", vertical: "center" }
+      };
+    }
+
+    XLSX.utils.book_append_sheet(workbook, monthlyWorksheet, 'Period Breakdown');
   }
 
-  XLSX.utils.book_append_sheet(workbook, monthlyWorksheet, 'Monthly Breakdown');
-
-  // Generate filename with current date
+  // Generate filename with current date and optional suffix
   const now = new Date();
   const dateStr = now.toISOString().split('T')[0];
   const timeStr = now.toTimeString().split(' ')[0].replace(/:/g, '-');
-  const filename = `internet-data-monitoring-${dateStr}-${timeStr}.xlsx`;
+  const filename = `internet-data-monitoring${filenameSuffix}-${dateStr}-${timeStr}.xlsx`;
 
   // Write and download the file
   XLSX.writeFile(workbook, filename);

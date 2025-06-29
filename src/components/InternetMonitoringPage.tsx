@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { ArrowLeft, Wifi, Plus, Download, Edit2, Trash2, Save, X, TrendingUp, Calendar, Clock, BarChart3, AlertTriangle } from 'lucide-react';
 import { InternetRecord, InternetStats } from '../types/internet';
 import { useInternetRecords } from '../hooks/useInternetRecords';
-import { exportInternetDataToExcel } from '../utils/internetExcelExport';
+import { InternetExportPage } from './InternetExportPage';
 
 interface InternetMonitoringPageProps {
   userId: string;
@@ -14,7 +14,7 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
   
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [isExporting, setIsExporting] = useState(false);
+  const [showExportPage, setShowExportPage] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState<{
@@ -31,6 +31,11 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
     workHours: '',
     notes: ''
   });
+
+  // Show export page if selected
+  if (showExportPage) {
+    return <InternetExportPage records={records} onBack={() => setShowExportPage(false)} />;
+  }
 
   // Calculate statistics
   const stats: InternetStats = useMemo(() => {
@@ -182,18 +187,6 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
     setDeleteConfirmation({ show: false, recordId: '', recordDate: '' });
   };
 
-  const handleExport = async () => {
-    setIsExporting(true);
-    try {
-      await exportInternetDataToExcel(records, stats);
-    } catch (error) {
-      console.error('Export failed:', error);
-      setActionError('Export failed. Please try again.');
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
   const formatDataUsage = (amount: number) => {
     if (amount >= 1000) {
       return `${(amount / 1000).toFixed(2)} TB`;
@@ -224,21 +217,12 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
           
           <div className="flex items-center gap-2">
             <button
-              onClick={handleExport}
-              disabled={isExporting || records.length === 0}
+              onClick={() => setShowExportPage(true)}
+              disabled={records.length === 0}
               className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isExporting ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  Exporting...
-                </>
-              ) : (
-                <>
-                  <Download className="w-4 h-4" />
-                  Export Data
-                </>
-              )}
+              <Download className="w-4 h-4" />
+              <span className="hidden sm:inline">Export Data</span>
             </button>
             
             <button
@@ -246,7 +230,7 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200"
             >
               <Plus className="w-4 h-4" />
-              Add Record
+              <span className="hidden sm:inline">Add Record</span>
             </button>
           </div>
         </div>
