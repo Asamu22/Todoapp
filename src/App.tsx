@@ -5,7 +5,7 @@ import { TodoItem } from './components/TodoItem';
 import { ProgressChart } from './components/ProgressChart';
 import { FilterBar } from './components/FilterBar';
 import { AuthPage } from './components/AuthPage';
-import { Header } from './components/Header';
+import { Navbar } from './components/Navbar';
 import { ExportPage } from './components/ExportPage';
 import { InternetMonitoringPage } from './components/InternetMonitoringPage';
 import { useNotifications } from './hooks/useNotifications';
@@ -202,24 +202,48 @@ function App() {
 
   // Show export page if selected
   if (currentView === 'export') {
-    return <ExportPage todos={todos} onBack={() => setCurrentView('tasks')} />;
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+        <Navbar 
+          currentView={currentView} 
+          onNavigate={setCurrentView} 
+          onLogout={signOut} 
+        />
+        <ExportPage todos={todos} onBack={() => setCurrentView('tasks')} />
+      </div>
+    );
   }
 
   // Show internet monitoring page if selected
   if (currentView === 'internet') {
-    return <InternetMonitoringPage userId={user.id} onBack={() => setCurrentView('tasks')} />;
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+        <Navbar 
+          currentView={currentView} 
+          onNavigate={setCurrentView} 
+          onLogout={signOut} 
+        />
+        <InternetMonitoringPage userId={user.id} onBack={() => setCurrentView('tasks')} />
+      </div>
+    );
   }
 
   // Show main application if authenticated
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      <Navbar 
+        currentView={currentView} 
+        onNavigate={setCurrentView} 
+        onLogout={signOut} 
+      />
+      
       <div className="container mx-auto px-4 py-8 max-w-7xl">
-        {/* Header with logout, export, and internet monitoring */}
-        <Header 
-          onLogout={signOut} 
-          onExport={() => setCurrentView('export')}
-          onInternetMonitoring={() => setCurrentView('internet')}
-        />
+        {/* Page Title */}
+        <div className="text-center mb-8">
+          <p className="text-gray-600 text-lg">
+            Organize your daily activities with smart notifications and progress tracking
+          </p>
+        </div>
 
         {/* Progress Chart */}
         <ProgressChart 
@@ -295,6 +319,13 @@ function App() {
               ))}
             </div>
           )}
+        </div>
+
+        {/* Footer */}
+        <div className="text-center mt-8">
+          <p className="text-sm text-gray-500">
+            © 2025 Acaltech. All rights reserved.
+          </p>
         </div>
       </div>
     </div>
