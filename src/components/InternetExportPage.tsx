@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { ArrowLeft, Download, FileSpreadsheet, Calendar, Filter, TrendingUp, BarChart3 } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, ComposedChart, Area, AreaChart } from 'recharts';
+import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { InternetRecord, InternetStats } from '../types/internet';
 import { exportInternetDataToExcel } from '../utils/internetExcelExport';
 
@@ -124,7 +124,7 @@ export const InternetExportPage: React.FC<InternetExportPageProps> = ({ records,
     };
   }, [filteredRecords]);
 
-  // Prepare chart data
+  // Prepare comprehensive chart data
   const chartData = useMemo(() => {
     return filteredRecords
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
@@ -242,199 +242,152 @@ export const InternetExportPage: React.FC<InternetExportPageProps> = ({ records,
           </div>
         </div>
 
-        {/* Data Visualization Charts */}
+        {/* Comprehensive Data Visualization Chart */}
         {chartData.length > 0 && (
           <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
             <div className="flex items-center gap-3 mb-6">
               <BarChart3 className="w-6 h-6 text-blue-600" />
-              <h2 className="text-xl font-semibold text-gray-800">Data Usage Analytics</h2>
+              <h2 className="text-xl font-semibold text-gray-800">Comprehensive Internet Data Analytics</h2>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Daily Usage Line Chart */}
-              <div>
-                <h3 className="text-lg font-medium text-gray-700 mb-3">Daily Data Usage Trend</h3>
-                <ResponsiveContainer width="100%" height={250}>
-                  <LineChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis 
-                      dataKey="date" 
-                      stroke="#666"
-                      fontSize={12}
-                      angle={-45}
-                      textAnchor="end"
-                      height={60}
-                    />
-                    <YAxis 
-                      stroke="#666"
-                      fontSize={12}
-                      label={{ value: 'Data (GB)', angle: -90, position: 'insideLeft' }}
-                    />
-                    <Tooltip 
-                      contentStyle={{
-                        backgroundColor: '#fff',
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                      }}
-                      formatter={(value: number, name: string) => [
-                        `${value.toFixed(2)} GB`,
-                        name === 'usage' ? 'Data Used' : name
-                      ]}
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="usage" 
-                      stroke="#dc2626" 
-                      strokeWidth={3}
-                      dot={{ fill: '#dc2626', strokeWidth: 2, r: 4 }}
-                      activeDot={{ r: 6, stroke: '#dc2626', strokeWidth: 2 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
+            <div className="w-full">
+              <ResponsiveContainer width="100%" height={400}>
+                <ComposedChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis 
+                    dataKey="date" 
+                    stroke="#666"
+                    fontSize={12}
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                  />
+                  <YAxis 
+                    yAxisId="left"
+                    stroke="#666"
+                    fontSize={12}
+                    label={{ value: 'Data (GB)', angle: -90, position: 'insideLeft' }}
+                  />
+                  <YAxis 
+                    yAxisId="right"
+                    orientation="right"
+                    stroke="#666"
+                    fontSize={12}
+                    label={{ value: 'Hours', angle: 90, position: 'insideRight' }}
+                  />
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: '#fff',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                    }}
+                    formatter={(value: number, name: string) => {
+                      switch (name) {
+                        case 'usage':
+                          return [`${value.toFixed(2)} GB`, 'Data Used'];
+                        case 'startBalance':
+                          return [`${value.toFixed(2)} GB`, 'Start Balance'];
+                        case 'endBalance':
+                          return [`${value.toFixed(2)} GB`, 'End Balance'];
+                        case 'workHours':
+                          return [`${value} hours`, 'Work Hours'];
+                        case 'usagePerHour':
+                          return [`${value.toFixed(2)} GB/hour`, 'Usage Rate'];
+                        default:
+                          return [value, name];
+                      }
+                    }}
+                    labelFormatter={(label) => `Date: ${label}`}
+                  />
+                  <Legend 
+                    verticalAlign="top" 
+                    height={36}
+                    iconType="line"
+                  />
+                  
+                  {/* Data Usage as Red Bars */}
+                  <Bar 
+                    yAxisId="left"
+                    dataKey="usage" 
+                    fill="#dc2626" 
+                    name="Data Used (GB)"
+                    radius={[2, 2, 0, 0]}
+                    opacity={0.8}
+                  />
+                  
+                  {/* Start Balance as Green Line */}
+                  <Line 
+                    yAxisId="left"
+                    type="monotone" 
+                    dataKey="startBalance" 
+                    stroke="#059669" 
+                    strokeWidth={3}
+                    name="Start Balance (GB)"
+                    dot={{ fill: '#059669', strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6, stroke: '#059669', strokeWidth: 2 }}
+                  />
+                  
+                  {/* End Balance as Blue Line */}
+                  <Line 
+                    yAxisId="left"
+                    type="monotone" 
+                    dataKey="endBalance" 
+                    stroke="#2563eb" 
+                    strokeWidth={3}
+                    name="End Balance (GB)"
+                    dot={{ fill: '#2563eb', strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6, stroke: '#2563eb', strokeWidth: 2 }}
+                  />
+                  
+                  {/* Work Hours as Purple Line */}
+                  <Line 
+                    yAxisId="right"
+                    type="monotone" 
+                    dataKey="workHours" 
+                    stroke="#7c3aed" 
+                    strokeWidth={2}
+                    name="Work Hours"
+                    dot={{ fill: '#7c3aed', strokeWidth: 2, r: 3 }}
+                    strokeDasharray="5 5"
+                  />
+                  
+                  {/* Usage per Hour as Orange Line */}
+                  <Line 
+                    yAxisId="left"
+                    type="monotone" 
+                    dataKey="usagePerHour" 
+                    stroke="#f59e0b" 
+                    strokeWidth={2}
+                    name="Usage Rate (GB/hour)"
+                    dot={{ fill: '#f59e0b', strokeWidth: 2, r: 3 }}
+                    strokeDasharray="3 3"
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
 
-              {/* Usage per Hour Bar Chart */}
-              <div>
-                <h3 className="text-lg font-medium text-gray-700 mb-3">Data Usage per Work Hour</h3>
-                <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis 
-                      dataKey="date" 
-                      stroke="#666"
-                      fontSize={12}
-                      angle={-45}
-                      textAnchor="end"
-                      height={60}
-                    />
-                    <YAxis 
-                      stroke="#666"
-                      fontSize={12}
-                      label={{ value: 'GB/Hour', angle: -90, position: 'insideLeft' }}
-                    />
-                    <Tooltip 
-                      contentStyle={{
-                        backgroundColor: '#fff',
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                      }}
-                      formatter={(value: number) => [`${value.toFixed(2)} GB/hour`, 'Usage Rate']}
-                    />
-                    <Bar 
-                      dataKey="usagePerHour" 
-                      fill="#7c3aed" 
-                      radius={[4, 4, 0, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
+            {/* Chart Legend Explanation */}
+            <div className="mt-4 grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-red-600 rounded"></div>
+                <span className="text-gray-700">Data Used (Bars)</span>
               </div>
-
-              {/* Balance Trend Area Chart */}
-              <div>
-                <h3 className="text-lg font-medium text-gray-700 mb-3">Data Balance Trend</h3>
-                <ResponsiveContainer width="100%" height={250}>
-                  <AreaChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis 
-                      dataKey="date" 
-                      stroke="#666"
-                      fontSize={12}
-                      angle={-45}
-                      textAnchor="end"
-                      height={60}
-                    />
-                    <YAxis 
-                      stroke="#666"
-                      fontSize={12}
-                      label={{ value: 'Balance (GB)', angle: -90, position: 'insideLeft' }}
-                    />
-                    <Tooltip 
-                      contentStyle={{
-                        backgroundColor: '#fff',
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                      }}
-                      formatter={(value: number, name: string) => [
-                        `${value.toFixed(2)} GB`,
-                        name === 'startBalance' ? 'Start Balance' : 'End Balance'
-                      ]}
-                    />
-                    <Area 
-                      type="monotone" 
-                      dataKey="startBalance" 
-                      stackId="1"
-                      stroke="#059669" 
-                      fill="#d1fae5"
-                    />
-                    <Area 
-                      type="monotone" 
-                      dataKey="endBalance" 
-                      stackId="2"
-                      stroke="#2563eb" 
-                      fill="#dbeafe"
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-1 bg-green-600 rounded"></div>
+                <span className="text-gray-700">Start Balance</span>
               </div>
-
-              {/* Combined Usage and Work Hours */}
-              <div>
-                <h3 className="text-lg font-medium text-gray-700 mb-3">Usage vs Work Hours</h3>
-                <ResponsiveContainer width="100%" height={250}>
-                  <ComposedChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis 
-                      dataKey="date" 
-                      stroke="#666"
-                      fontSize={12}
-                      angle={-45}
-                      textAnchor="end"
-                      height={60}
-                    />
-                    <YAxis 
-                      yAxisId="left"
-                      stroke="#666"
-                      fontSize={12}
-                      label={{ value: 'Data (GB)', angle: -90, position: 'insideLeft' }}
-                    />
-                    <YAxis 
-                      yAxisId="right"
-                      orientation="right"
-                      stroke="#666"
-                      fontSize={12}
-                      label={{ value: 'Hours', angle: 90, position: 'insideRight' }}
-                    />
-                    <Tooltip 
-                      contentStyle={{
-                        backgroundColor: '#fff',
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                      }}
-                      formatter={(value: number, name: string) => [
-                        name === 'workHours' ? `${value} hours` : `${value.toFixed(2)} GB`,
-                        name === 'usage' ? 'Data Used' : 'Work Hours'
-                      ]}
-                    />
-                    <Bar 
-                      yAxisId="left"
-                      dataKey="usage" 
-                      fill="#f59e0b" 
-                      radius={[4, 4, 0, 0]}
-                    />
-                    <Line 
-                      yAxisId="right"
-                      type="monotone" 
-                      dataKey="workHours" 
-                      stroke="#10b981" 
-                      strokeWidth={3}
-                      dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
-                    />
-                  </ComposedChart>
-                </ResponsiveContainer>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-1 bg-blue-600 rounded"></div>
+                <span className="text-gray-700">End Balance</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-1 bg-purple-600 rounded border-dashed border-2 border-purple-600"></div>
+                <span className="text-gray-700">Work Hours</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-1 bg-orange-600 rounded border-dotted border-2 border-orange-600"></div>
+                <span className="text-gray-700">Usage Rate</span>
               </div>
             </div>
           </div>
