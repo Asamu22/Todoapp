@@ -22,6 +22,7 @@ function App() {
   const [showCompleted, setShowCompleted] = useState(true);
   const [dateFilter, setDateFilter] = useState('all');
   const [currentView, setCurrentView] = useState<'tasks' | 'export' | 'internet'>('tasks');
+  const [sideNavCollapsed, setSideNavCollapsed] = useState(false);
 
   // Enable notifications only when authenticated
   useNotifications(user ? todos : []);
@@ -206,11 +207,14 @@ function App() {
       <SideNav 
         currentView={currentView} 
         onNavigate={setCurrentView} 
-        onLogout={signOut} 
+        onLogout={signOut}
+        onCollapseChange={setSideNavCollapsed}
       />
       
       {/* Main Content */}
-      <div className="lg:ml-64 transition-all duration-300">
+      <div className={`transition-all duration-300 ${
+        sideNavCollapsed ? 'lg:ml-16' : 'lg:ml-64'
+      }`}>
         {currentView === 'export' && (
           <div className="min-h-screen">
             <ExportPage todos={todos} onBack={() => setCurrentView('tasks')} />

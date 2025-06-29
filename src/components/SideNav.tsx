@@ -1,15 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CheckSquare, Bell, LogOut, Download, Wifi, Menu, X, Home, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface SideNavProps {
   currentView: 'tasks' | 'export' | 'internet';
   onNavigate: (view: 'tasks' | 'export' | 'internet') => void;
   onLogout: () => void;
+  onCollapseChange: (collapsed: boolean) => void;
 }
 
-export const SideNav: React.FC<SideNavProps> = ({ currentView, onNavigate, onLogout }) => {
+export const SideNav: React.FC<SideNavProps> = ({ currentView, onNavigate, onLogout, onCollapseChange }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+
+  // Notify parent component when collapse state changes
+  useEffect(() => {
+    onCollapseChange(isCollapsed);
+  }, [isCollapsed, onCollapseChange]);
 
   const navigationItems = [
     {
@@ -35,6 +41,10 @@ export const SideNav: React.FC<SideNavProps> = ({ currentView, onNavigate, onLog
   const handleNavigation = (view: 'tasks' | 'export' | 'internet') => {
     onNavigate(view);
     setIsMobileOpen(false);
+  };
+
+  const handleCollapse = () => {
+    setIsCollapsed(!isCollapsed);
   };
 
   return (
@@ -86,7 +96,7 @@ export const SideNav: React.FC<SideNavProps> = ({ currentView, onNavigate, onLog
         {/* Collapse Toggle (Desktop Only) */}
         <div className="hidden lg:block">
           <button
-            onClick={() => setIsCollapsed(!isCollapsed)}
+            onClick={handleCollapse}
             className="absolute -right-3 top-20 bg-white border border-gray-200 rounded-full p-1 text-gray-400 hover:text-gray-600 shadow-md transition-colors"
           >
             {isCollapsed ? (
@@ -109,7 +119,7 @@ export const SideNav: React.FC<SideNavProps> = ({ currentView, onNavigate, onLog
                   key={item.id}
                   onClick={() => handleNavigation(item.id)}
                   className={`
-                    w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left transition-all duration-200 group
+                    w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left transition-all duration-200 group relative
                     ${isActive
                       ? 'bg-blue-100 text-blue-700 shadow-sm'
                       : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
@@ -124,6 +134,13 @@ export const SideNav: React.FC<SideNavProps> = ({ currentView, onNavigate, onLog
                       {item.description}
                     </div>
                   </div>
+                  
+                  {/* Tooltip for collapsed state */}
+                  {isCollapsed && (
+                    <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                      {item.label}
+                    </div>
+                  )}
                 </button>
               );
             })}
@@ -138,7 +155,7 @@ export const SideNav: React.FC<SideNavProps> = ({ currentView, onNavigate, onLog
               setIsMobileOpen(false);
             }}
             className={`
-              w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left text-gray-600 hover:text-red-600 hover:bg-red-50 transition-all duration-200
+              w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left text-gray-600 hover:text-red-600 hover:bg-red-50 transition-all duration-200 group relative
             `}
             title={isCollapsed ? 'Sign Out' : ''}
           >
@@ -147,6 +164,13 @@ export const SideNav: React.FC<SideNavProps> = ({ currentView, onNavigate, onLog
               <div className="font-medium">Sign Out</div>
               <div className="text-xs text-gray-500">End your session</div>
             </div>
+            
+            {/* Tooltip for collapsed state */}
+            {isCollapsed && (
+              <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                Sign Out
+              </div>
+            )}
           </button>
         </div>
 
