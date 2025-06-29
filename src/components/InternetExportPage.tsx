@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { ArrowLeft, Download, FileSpreadsheet, Calendar, Filter, TrendingUp, BarChart3 } from 'lucide-react';
-import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { InternetRecord, InternetStats } from '../types/internet';
 import { exportInternetDataToExcel } from '../utils/internetExcelExport';
 
@@ -252,7 +252,7 @@ export const InternetExportPage: React.FC<InternetExportPageProps> = ({ records,
 
             <div className="w-full">
               <ResponsiveContainer width="100%" height={400}>
-                <ComposedChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+                <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                   <XAxis 
                     dataKey="date" 
@@ -306,14 +306,16 @@ export const InternetExportPage: React.FC<InternetExportPageProps> = ({ records,
                     iconType="line"
                   />
                   
-                  {/* Data Usage as Red Bars */}
-                  <Bar 
+                  {/* Data Usage as Red Line */}
+                  <Line 
                     yAxisId="left"
+                    type="monotone" 
                     dataKey="usage" 
-                    fill="#dc2626" 
+                    stroke="#dc2626" 
+                    strokeWidth={4}
                     name="Data Used (GB)"
-                    radius={[2, 2, 0, 0]}
-                    opacity={0.8}
+                    dot={{ fill: '#dc2626', strokeWidth: 2, r: 5 }}
+                    activeDot={{ r: 7, stroke: '#dc2626', strokeWidth: 2 }}
                   />
                   
                   {/* Start Balance as Green Line */}
@@ -340,7 +342,7 @@ export const InternetExportPage: React.FC<InternetExportPageProps> = ({ records,
                     activeDot={{ r: 6, stroke: '#2563eb', strokeWidth: 2 }}
                   />
                   
-                  {/* Work Hours as Purple Line */}
+                  {/* Work Hours as Purple Dashed Line */}
                   <Line 
                     yAxisId="right"
                     type="monotone" 
@@ -352,7 +354,7 @@ export const InternetExportPage: React.FC<InternetExportPageProps> = ({ records,
                     strokeDasharray="5 5"
                   />
                   
-                  {/* Usage per Hour as Orange Line */}
+                  {/* Usage per Hour as Orange Dotted Line */}
                   <Line 
                     yAxisId="left"
                     type="monotone" 
@@ -363,15 +365,15 @@ export const InternetExportPage: React.FC<InternetExportPageProps> = ({ records,
                     dot={{ fill: '#f59e0b', strokeWidth: 2, r: 3 }}
                     strokeDasharray="3 3"
                   />
-                </ComposedChart>
+                </LineChart>
               </ResponsiveContainer>
             </div>
 
             {/* Chart Legend Explanation */}
             <div className="mt-4 grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-red-600 rounded"></div>
-                <span className="text-gray-700">Data Used (Bars)</span>
+                <div className="w-4 h-1 bg-red-600 rounded"></div>
+                <span className="text-gray-700">Data Used</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-4 h-1 bg-green-600 rounded"></div>
