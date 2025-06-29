@@ -1,8 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import { Wifi, Plus, Download, Edit2, Trash2, Save, X, TrendingUp, Calendar, Clock, BarChart3, AlertTriangle, Building2 } from 'lucide-react';
+import { Wifi, Plus, Download, Edit2, Trash2, Save, X, TrendingUp, Calendar, Clock, BarChart3, AlertTriangle, Building2, Calculator } from 'lucide-react';
 import { InternetRecord, InternetStats } from '../types/internet';
 import { useInternetRecords } from '../hooks/useInternetRecords';
 import { InternetExportPage } from './InternetExportPage';
+import { DataCalculator } from './DataCalculator';
 
 interface InternetMonitoringPageProps {
   userId: string;
@@ -15,6 +16,7 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showExportPage, setShowExportPage] = useState(false);
+  const [showCalculator, setShowCalculator] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [selectedOffice, setSelectedOffice] = useState<string>('All');
@@ -245,6 +247,15 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
         
         <div className="flex items-center gap-2">
           <button
+            onClick={() => setShowCalculator(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all duration-200"
+            title="Data Calculator"
+          >
+            <Calculator className="w-4 h-4" />
+            <span className="hidden sm:inline">Calculator</span>
+          </button>
+          
+          <button
             onClick={() => setShowExportPage(true)}
             disabled={records.length === 0}
             className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -262,6 +273,12 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
           </button>
         </div>
       </div>
+
+      {/* Data Calculator Modal */}
+      <DataCalculator 
+        isOpen={showCalculator} 
+        onClose={() => setShowCalculator(false)} 
+      />
 
       {/* Office Filter */}
       <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
