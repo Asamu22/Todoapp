@@ -167,14 +167,31 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
         });
         setEditingId(null);
       } else {
-        await addRecord({
-          date: formData.date,
-          startBalance,
-          endBalance,
-          workHours,
-          office: formData.office.trim(),
-          notes: formData.notes.trim() || undefined
-        });
+        // Check if a record already exists for this date
+        const existingRecord = records.find(record => record.date === formData.date);
+        
+        if (existingRecord) {
+          // Update the existing record instead of creating a new one
+          await updateRecord(existingRecord.id, {
+            date: formData.date,
+            startBalance,
+            endBalance,
+            workHours,
+            office: formData.office.trim(),
+            notes: formData.notes.trim() || undefined
+          });
+          setActionError(`Updated existing record for ${new Date(formData.date).toLocaleDateString()}`);
+        } else {
+          // Create a new record
+          await addRecord({
+            date: formData.date,
+            startBalance,
+            endBalance,
+            workHours,
+            office: formData.office.trim(),
+            notes: formData.notes.trim() || undefined
+          });
+        }
         setShowAddForm(false);
       }
       
@@ -187,7 +204,11 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
         office: 'Main Office',
         notes: ''
       });
-      setActionError(null);
+      
+      // Clear the error after a delay if it was just an update notification
+      if (actionError && actionError.includes('Updated existing record')) {
+        setTimeout(() => setActionError(null), 3000);
+      }
     } catch (err) {
       console.error('Error saving record:', err);
       setActionError(err instanceof Error ? err.message : 'Failed to save record');
@@ -376,10 +397,24 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
 
       {/* Error Display */}
       {(error || actionError) && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+        <div className={`border rounded-lg p-4 mb-6 ${
+          actionError && actionError.includes('Updated existing record')
+            ? 'bg-blue-50 border-blue-200'
+            : 'bg-red-50 border-red-200'
+        }`}>
           <div className="flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5 text-red-600" />
-            <p className="text-red-600">{error || actionError}</p>
+            {actionError && actionError.includes('Updated existing record') ? (
+              <Calendar className="w-5 h-5 text-blue-600" />
+            ) : (
+              <AlertTriangle className="w-5 h-5 text-red-600" />
+            )}
+            <p className={
+              actionError && actionError.includes('Updated existing record')
+                ? 'text-blue-600'
+                : 'text-red-600'
+            }>
+              {error || actionError}
+            </p>
           </div>
         </div>
       )}
@@ -481,6 +516,11 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
               />
+              {!editingId && records.find(r => r.date === formData.date) && (
+                <p className="text-xs text-amber-600 mt-1">
+                  ⚠️ A record already exists for this date. It will be updated.
+                </p>
+              )}
             </div>
 
             <div>
