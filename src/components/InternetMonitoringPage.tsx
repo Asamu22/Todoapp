@@ -732,3 +732,5 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
     </div>
   );
 };
+
+export { InternetMonitoringPage }
