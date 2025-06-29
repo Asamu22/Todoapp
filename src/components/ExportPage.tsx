@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Download, FileSpreadsheet, Calendar, Filter, ArrowLeft } from 'lucide-react';
+import { Download, FileSpreadsheet, Calendar, Filter } from 'lucide-react';
 import { Todo } from '../types/todo';
 import { exportToExcel } from '../utils/excelExport';
 
@@ -101,7 +101,7 @@ export const ExportPage: React.FC<ExportPageProps> = ({ todos, onBack }) => {
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       {/* Header */}
-      <div className="flex items-center gap-4 mb-8">
+      <div className="flex items-center gap-4 mb-8 pt-16 lg:pt-0">
         <div className="flex items-center gap-3">
           <FileSpreadsheet className="w-8 h-8 text-green-600" />
           <h1 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
