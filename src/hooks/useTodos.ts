@@ -15,6 +15,8 @@ const convertRowToTodo = (row: TodoRow): Todo => ({
   category: row.category,
   priority: row.priority,
   dueTime: row.due_time || undefined,
+  dueDate: row.due_date || undefined,
+  scheduledFor: row.scheduled_for ? new Date(row.scheduled_for) : undefined,
   completed: row.completed,
   createdAt: new Date(row.created_at),
   completedAt: row.completed_at ? new Date(row.completed_at) : undefined
@@ -66,6 +68,8 @@ export const useTodos = (userId: string | null) => {
         category: todoData.category,
         priority: todoData.priority,
         due_time: todoData.dueTime || null,
+        due_date: todoData.dueDate || null,
+        scheduled_for: todoData.scheduledFor ? todoData.scheduledFor.toISOString() : null,
         completed: false
       };
 
