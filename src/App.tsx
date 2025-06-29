@@ -4,16 +4,17 @@ import { TodoForm } from './components/TodoForm';
 import { TodoItem } from './components/TodoItem';
 import { ProgressChart } from './components/ProgressChart';
 import { FilterBar } from './components/FilterBar';
-import { LoginPage } from './components/LoginPage';
+import { AuthPage } from './components/AuthPage';
 import { Header } from './components/Header';
 import { ExportPage } from './components/ExportPage';
-import { useLocalStorage } from './hooks/useLocalStorage';
 import { useNotifications } from './hooks/useNotifications';
-import { useAuth } from './hooks/useAuth';
+import { useSupabaseAuth } from './hooks/useSupabaseAuth';
+import { useTodos } from './hooks/useTodos';
 
 function App() {
-  const { isAuthenticated, isLoading, login, logout } = useAuth();
-  const [todos, setTodos] = useLocalStorage<Todo[]>('todos', []);
+  const { user, loading: authLoading, signOut } = useSupabaseAuth();
+  const { todos, loading: todosLoading, error, addTodo, toggleTodo, deleteTodo } = useTodos(user?.id || null);
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedPriority, setSelectedPriority] = useState('All');
@@ -21,33 +22,7 @@ function App() {
   const [currentView, setCurrentView] = useState<'tasks' | 'export'>('tasks');
 
   // Enable notifications only when authenticated
-  useNotifications(isAuthenticated ? todos : []);
-
-  const addTodo = (todoData: Omit<Todo, 'id' | 'createdAt' | 'completed'>) => {
-    const newTodo: Todo = {
-      ...todoData,
-      id: crypto.randomUUID(),
-      createdAt: new Date(),
-      completed: false
-    };
-    setTodos(prev => [newTodo, ...prev]);
-  };
-
-  const toggleTodo = (id: string) => {
-    setTodos(prev => prev.map(todo => 
-      todo.id === id 
-        ? { 
-            ...todo, 
-            completed: !todo.completed,
-            completedAt: !todo.completed ? new Date() : undefined
-          }
-        : todo
-    ));
-  };
-
-  const deleteTodo = (id: string) => {
-    setTodos(prev => prev.filter(todo => todo.id !== id));
-  };
+  useNotifications(user ? todos : []);
 
   // Filter todos
   const filteredTodos = useMemo(() => {
@@ -105,7 +80,7 @@ function App() {
   }, [todos]);
 
   // Show loading spinner while checking authentication
-  if (isLoading) {
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
         <div className="text-center">
@@ -116,9 +91,9 @@ function App() {
     );
   }
 
-  // Show login page if not authenticated
-  if (!isAuthenticated) {
-    return <LoginPage onLogin={login} />;
+  // Show auth page if not authenticated
+  if (!user) {
+    return <AuthPage />;
   }
 
   // Show export page if selected
@@ -131,7 +106,7 @@ function App() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Header with logout and export */}
-        <Header onLogout={logout} onExport={() => setCurrentView('export')} />
+        <Header onLogout={signOut} onExport={() => setCurrentView('export')} />
 
         {/* Progress Chart */}
         <ProgressChart 
@@ -156,6 +131,13 @@ function App() {
           onShowCompletedChange={setShowCompleted}
         />
 
+        {/* Error Display */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <p className="text-red-600">{error}</p>
+          </div>
+        )}
+
         {/* Todo List */}
         <div className="bg-white rounded-xl shadow-lg p-6">
           <div className="flex items-center justify-between mb-6">
@@ -169,7 +151,12 @@ function App() {
             )}
           </div>
 
-          {filteredTodos.length === 0 ? (
+          {todosLoading ? (
+            <div className="text-center py-12">
+              <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-gray-500">Loading your tasks...</p>
+            </div>
+          ) : filteredTodos.length === 0 ? (
             <div className="text-center py-12">
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl">📝</span>
