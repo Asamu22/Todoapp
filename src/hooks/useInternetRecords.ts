@@ -20,6 +20,14 @@ const convertRowToRecord = (row: InternetRecordRow): InternetRecord => ({
   updatedAt: new Date(row.updated_at)
 });
 
+// Helper function to handle JWT expired errors
+const handleJWTExpired = async (error: any) => {
+  if (error?.message?.includes('JWT expired') || error?.code === 'PGRST301') {
+    console.log('JWT expired, signing out user');
+    await supabase.auth.signOut();
+  }
+};
+
 export const useInternetRecords = (userId: string | null) => {
   const [records, setRecords] = useState<InternetRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,6 +56,7 @@ export const useInternetRecords = (userId: string | null) => {
       setError(null);
     } catch (err) {
       console.error('Error fetching internet records:', err);
+      await handleJWTExpired(err);
       setError(err instanceof Error ? err.message : 'Failed to fetch records');
     } finally {
       setLoading(false);
@@ -84,6 +93,7 @@ export const useInternetRecords = (userId: string | null) => {
       setError(null);
     } catch (err) {
       console.error('Error adding record:', err);
+      await handleJWTExpired(err);
       setError(err instanceof Error ? err.message : 'Failed to add record');
       throw err; // Re-throw to handle in component
     }
@@ -125,6 +135,7 @@ export const useInternetRecords = (userId: string | null) => {
       setError(null);
     } catch (err) {
       console.error('Error updating record:', err);
+      await handleJWTExpired(err);
       setError(err instanceof Error ? err.message : 'Failed to update record');
       throw err; // Re-throw to handle in component
     }
@@ -145,6 +156,7 @@ export const useInternetRecords = (userId: string | null) => {
 
       if (fetchError) {
         console.error('Error fetching record for deletion:', fetchError);
+        await handleJWTExpired(fetchError);
         throw new Error('Record not found or access denied');
       }
 
@@ -163,6 +175,7 @@ export const useInternetRecords = (userId: string | null) => {
 
       if (deleteError) {
         console.error('Error deleting record:', deleteError);
+        await handleJWTExpired(deleteError);
         throw deleteError;
       }
 
@@ -178,6 +191,7 @@ export const useInternetRecords = (userId: string | null) => {
       setError(null);
     } catch (err) {
       console.error('Error in deleteRecord function:', err);
+      await handleJWTExpired(err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to delete record';
       setError(errorMessage);
       throw new Error(errorMessage); // Re-throw to handle in component

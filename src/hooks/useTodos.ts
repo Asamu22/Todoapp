@@ -22,6 +22,14 @@ const convertRowToTodo = (row: TodoRow): Todo => ({
   completedAt: row.completed_at ? new Date(row.completed_at) : undefined
 });
 
+// Helper function to handle JWT expired errors
+const handleJWTExpired = async (error: any) => {
+  if (error?.message?.includes('JWT expired') || error?.code === 'PGRST301') {
+    console.log('JWT expired, signing out user');
+    await supabase.auth.signOut();
+  }
+};
+
 export const useTodos = (userId: string | null) => {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,6 +58,7 @@ export const useTodos = (userId: string | null) => {
       setError(null);
     } catch (err) {
       console.error('Error fetching todos:', err);
+      await handleJWTExpired(err);
       setError(err instanceof Error ? err.message : 'Failed to fetch todos');
     } finally {
       setLoading(false);
@@ -86,6 +95,7 @@ export const useTodos = (userId: string | null) => {
       setError(null);
     } catch (err) {
       console.error('Error adding todo:', err);
+      await handleJWTExpired(err);
       setError(err instanceof Error ? err.message : 'Failed to add todo');
     }
   };
@@ -115,6 +125,7 @@ export const useTodos = (userId: string | null) => {
       setError(null);
     } catch (err) {
       console.error('Error toggling todo:', err);
+      await handleJWTExpired(err);
       setError(err instanceof Error ? err.message : 'Failed to update todo');
     }
   };
@@ -133,6 +144,7 @@ export const useTodos = (userId: string | null) => {
       setError(null);
     } catch (err) {
       console.error('Error deleting todo:', err);
+      await handleJWTExpired(err);
       setError(err instanceof Error ? err.message : 'Failed to delete todo');
     }
   };
