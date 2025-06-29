@@ -181,3 +181,7 @@ This project is open source and available under the [MIT License](LICENSE).
 ## Support
 
 If you encounter any issues or have questions about using the Daily Activity Tracker, please create an issue in the repository or contact the development team.
+
+---
+
+© 2025 Acaltech. All rights reserved.
