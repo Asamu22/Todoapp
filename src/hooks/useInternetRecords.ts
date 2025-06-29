@@ -15,6 +15,7 @@ const convertRowToRecord = (row: InternetRecordRow): InternetRecord => ({
   endBalance: row.end_balance,
   usage: row.usage,
   workHours: row.work_hours,
+  office: row.office,
   notes: row.notes || undefined,
   createdAt: new Date(row.created_at),
   updatedAt: new Date(row.updated_at)
@@ -77,6 +78,7 @@ export const useInternetRecords = (userId: string | null) => {
         end_balance: recordData.endBalance,
         usage: usage,
         work_hours: recordData.workHours,
+        office: recordData.office,
         notes: recordData.notes || null
       };
 
@@ -107,6 +109,7 @@ export const useInternetRecords = (userId: string | null) => {
         ...(updates.startBalance !== undefined && { start_balance: updates.startBalance }),
         ...(updates.endBalance !== undefined && { end_balance: updates.endBalance }),
         ...(updates.workHours !== undefined && { work_hours: updates.workHours }),
+        ...(updates.office && { office: updates.office }),
         ...(updates.notes !== undefined && { notes: updates.notes || null }),
         updated_at: new Date().toISOString()
       };

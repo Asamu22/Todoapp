@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Wifi, Plus, Download, Edit2, Trash2, Save, X, TrendingUp, Calendar, Clock, BarChart3, AlertTriangle } from 'lucide-react';
+import { Wifi, Plus, Download, Edit2, Trash2, Save, X, TrendingUp, Calendar, Clock, BarChart3, AlertTriangle, Building2 } from 'lucide-react';
 import { InternetRecord, InternetStats } from '../types/internet';
 import { useInternetRecords } from '../hooks/useInternetRecords';
 import { InternetExportPage } from './InternetExportPage';
@@ -17,6 +17,7 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
   const [showExportPage, setShowExportPage] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [selectedOffice, setSelectedOffice] = useState<string>('All');
   const [deleteConfirmation, setDeleteConfirmation] = useState<{
     show: boolean;
     recordId: string;
@@ -29,19 +30,35 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
     startBalance: '',
     endBalance: '',
     workHours: '',
+    office: 'Main Office',
     notes: ''
   });
 
-  // Calculate statistics - moved before conditional return
+  // Get unique offices from records
+  const availableOffices = useMemo(() => {
+    const offices = Array.from(new Set(records.map(record => record.office)));
+    return ['All', ...offices.sort()];
+  }, [records]);
+
+  // Filter records by selected office
+  const filteredRecords = useMemo(() => {
+    if (selectedOffice === 'All') {
+      return records;
+    }
+    return records.filter(record => record.office === selectedOffice);
+  }, [records, selectedOffice]);
+
+  // Calculate statistics for filtered records
   const stats: InternetStats = useMemo(() => {
-    const totalRecords = records.length;
-    const totalUsage = records.reduce((sum, record) => sum + record.usage, 0);
+    const recordsToAnalyze = filteredRecords;
+    const totalRecords = recordsToAnalyze.length;
+    const totalUsage = recordsToAnalyze.reduce((sum, record) => sum + record.usage, 0);
     const averageUsage = totalRecords > 0 ? totalUsage / totalRecords : 0;
-    const averageWorkHours = totalRecords > 0 ? records.reduce((sum, record) => sum + record.workHours, 0) / totalRecords : 0;
+    const averageWorkHours = totalRecords > 0 ? recordsToAnalyze.reduce((sum, record) => sum + record.workHours, 0) / totalRecords : 0;
     
     const currentMonth = new Date().getMonth();
     const currentYear = new Date().getFullYear();
-    const currentMonthUsage = records
+    const currentMonthUsage = recordsToAnalyze
       .filter(record => {
         const recordDate = new Date(record.date);
         return recordDate.getMonth() === currentMonth && recordDate.getFullYear() === currentYear;
@@ -50,9 +67,19 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
     
     const lastWeek = new Date();
     lastWeek.setDate(lastWeek.getDate() - 7);
-    const lastWeekUsage = records
+    const lastWeekUsage = recordsToAnalyze
       .filter(record => new Date(record.date) >= lastWeek)
       .reduce((sum, record) => sum + record.usage, 0);
+
+    // Calculate office breakdown from all records (not filtered)
+    const officeBreakdown = records.reduce((acc, record) => {
+      if (!acc[record.office]) {
+        acc[record.office] = { records: 0, usage: 0 };
+      }
+      acc[record.office].records += 1;
+      acc[record.office].usage += record.usage;
+      return acc;
+    }, {} as { [office: string]: { records: number; usage: number } });
 
     return {
       totalRecords,
@@ -60,9 +87,10 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
       averageUsage,
       averageWorkHours,
       currentMonthUsage,
-      lastWeekUsage
+      lastWeekUsage,
+      officeBreakdown
     };
-  }, [records]);
+  }, [filteredRecords, records]);
 
   // Show export page if selected
   if (showExportPage) {
@@ -87,6 +115,11 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
       return;
     }
 
+    if (!formData.office.trim()) {
+      setActionError('Please specify an office');
+      return;
+    }
+
     try {
       if (editingId) {
         await updateRecord(editingId, {
@@ -94,6 +127,7 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
           startBalance,
           endBalance,
           workHours,
+          office: formData.office.trim(),
           notes: formData.notes.trim() || undefined
         });
         setEditingId(null);
@@ -103,6 +137,7 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
           startBalance,
           endBalance,
           workHours,
+          office: formData.office.trim(),
           notes: formData.notes.trim() || undefined
         });
         setShowAddForm(false);
@@ -114,6 +149,7 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
         startBalance: '',
         endBalance: '',
         workHours: '',
+        office: 'Main Office',
         notes: ''
       });
       setActionError(null);
@@ -129,6 +165,7 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
       startBalance: record.startBalance.toString(),
       endBalance: record.endBalance.toString(),
       workHours: record.workHours.toString(),
+      office: record.office,
       notes: record.notes || ''
     });
     setEditingId(record.id);
@@ -145,6 +182,7 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
       startBalance: '',
       endBalance: '',
       workHours: '',
+      office: 'Main Office',
       notes: ''
     });
   };
@@ -225,6 +263,30 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
         </div>
       </div>
 
+      {/* Office Filter */}
+      <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
+        <div className="flex items-center gap-4 flex-wrap">
+          <div className="flex items-center gap-2">
+            <Building2 className="w-5 h-5 text-gray-600" />
+            <span className="text-sm font-medium text-gray-700">Filter by Office:</span>
+          </div>
+          <select
+            value={selectedOffice}
+            onChange={(e) => setSelectedOffice(e.target.value)}
+            className="px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            {availableOffices.map(office => (
+              <option key={office} value={office}>{office}</option>
+            ))}
+          </select>
+          {selectedOffice !== 'All' && (
+            <span className="text-sm text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+              Showing {filteredRecords.length} records for {selectedOffice}
+            </span>
+          )}
+        </div>
+      </div>
+
       {/* Delete Confirmation Modal */}
       {deleteConfirmation.show && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -277,7 +339,9 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
         <div className="bg-white rounded-xl shadow-lg p-6">
           <div className="flex items-center gap-3 mb-2">
             <BarChart3 className="w-5 h-5 text-blue-600" />
-            <span className="text-sm font-medium text-gray-600">Total Records</span>
+            <span className="text-sm font-medium text-gray-600">
+              {selectedOffice === 'All' ? 'Total Records' : `${selectedOffice} Records`}
+            </span>
           </div>
           <p className="text-2xl font-bold text-blue-900">{stats.totalRecords}</p>
         </div>
@@ -285,7 +349,9 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
         <div className="bg-white rounded-xl shadow-lg p-6">
           <div className="flex items-center gap-3 mb-2">
             <TrendingUp className="w-5 h-5 text-red-600" />
-            <span className="text-sm font-medium text-gray-600">Total Data Used</span>
+            <span className="text-sm font-medium text-gray-600">
+              {selectedOffice === 'All' ? 'Total Data Used' : `${selectedOffice} Usage`}
+            </span>
           </div>
           <p className="text-2xl font-bold text-red-900">{formatDataUsage(stats.totalUsage)}</p>
         </div>
@@ -306,6 +372,39 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
           <p className="text-2xl font-bold text-purple-900">{formatDataUsage(stats.averageUsage)}</p>
         </div>
       </div>
+
+      {/* Office Breakdown */}
+      {selectedOffice === 'All' && Object.keys(stats.officeBreakdown).length > 1 && (
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
+          <div className="flex items-center gap-3 mb-6">
+            <Building2 className="w-6 h-6 text-blue-600" />
+            <h2 className="text-xl font-semibold text-gray-800">Office Breakdown</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Object.entries(stats.officeBreakdown).map(([office, data]) => (
+              <div key={office} className="bg-gray-50 rounded-lg p-4">
+                <h3 className="font-medium text-gray-800 mb-2">{office}</h3>
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Records:</span>
+                    <span className="font-medium">{data.records}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Total Usage:</span>
+                    <span className="font-medium text-red-600">{formatDataUsage(data.usage)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Avg. per Record:</span>
+                    <span className="font-medium text-purple-600">
+                      {formatDataUsage(data.usage / data.records)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Add/Edit Form */}
       {showAddForm && (
@@ -330,6 +429,18 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
                 value={formData.date}
                 onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Office</label>
+              <input
+                type="text"
+                value={formData.office}
+                onChange={(e) => setFormData(prev => ({ ...prev, office: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="e.g., Main Office, Branch A, Remote"
                 required
               />
             </div>
@@ -373,7 +484,7 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
               />
             </div>
 
-            <div className="md:col-span-2">
+            <div className="md:col-span-2 lg:col-span-1">
               <label className="block text-sm font-medium text-gray-700 mb-2">Notes (Optional)</label>
               <input
                 type="text"
@@ -408,7 +519,12 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
       <div className="bg-white rounded-xl shadow-lg p-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-gray-800">
-            Internet Data Usage Records ({records.length})
+            Internet Data Usage Records ({filteredRecords.length})
+            {selectedOffice !== 'All' && (
+              <span className="text-sm font-normal text-gray-500 ml-2">
+                - {selectedOffice}
+              </span>
+            )}
           </h2>
         </div>
 
@@ -417,12 +533,17 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
             <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
             <p className="text-gray-500">Loading records...</p>
           </div>
-        ) : records.length === 0 ? (
+        ) : filteredRecords.length === 0 ? (
           <div className="text-center py-12">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <Wifi className="w-8 h-8 text-gray-400" />
             </div>
-            <p className="text-gray-500 text-lg">No records yet. Add your first internet data usage record!</p>
+            <p className="text-gray-500 text-lg">
+              {selectedOffice === 'All' 
+                ? 'No records yet. Add your first internet data usage record!'
+                : `No records found for ${selectedOffice}. Try selecting a different office or add a new record.`
+              }
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -430,6 +551,7 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
               <thead>
                 <tr className="border-b border-gray-200">
                   <th className="text-left py-3 px-4 font-medium text-gray-700">Date</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-700">Office</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-700">Start Balance</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-700">End Balance</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-700">Data Used</th>
@@ -440,7 +562,7 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
                 </tr>
               </thead>
               <tbody>
-                {records.map((record) => (
+                {filteredRecords.map((record) => (
                   <tr key={record.id} className="border-b border-gray-100 hover:bg-gray-50">
                     <td className="py-3 px-4">
                       {new Date(record.date).toLocaleDateString('en-US', {
@@ -449,6 +571,11 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
                         day: 'numeric',
                         year: 'numeric'
                       })}
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
+                        {record.office}
+                      </span>
                     </td>
                     <td className="py-3 px-4 font-medium text-green-600">
                       {formatDataUsage(record.startBalance)}

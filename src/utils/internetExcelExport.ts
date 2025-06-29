@@ -22,6 +22,7 @@ export const exportInternetDataToExcel = async (
       month: 'long',
       day: 'numeric'
     }),
+    'Office': record.office,
     'Start Balance (GB)': record.startBalance.toFixed(2),
     'End Balance (GB)': record.endBalance.toFixed(2),
     'Data Used (GB)': record.usage.toFixed(2),
@@ -40,6 +41,7 @@ export const exportInternetDataToExcel = async (
   const columnWidths = [
     { wch: 5 },   // No.
     { wch: 20 },  // Date
+    { wch: 15 },  // Office
     { wch: 15 },  // Start Balance
     { wch: 15 },  // End Balance
     { wch: 12 },  // Data Used
@@ -65,7 +67,7 @@ export const exportInternetDataToExcel = async (
   }
 
   // Add conditional formatting for data usage amounts
-  const usageColIndex = 4; // Data Used column (0-indexed)
+  const usageColIndex = 5; // Data Used column (0-indexed)
   for (let row = 1; row <= excelData.length; row++) {
     const cellAddress = XLSX.utils.encode_cell({ r: row, c: usageColIndex });
     if (!worksheet[cellAddress]) continue;
@@ -86,6 +88,34 @@ export const exportInternetDataToExcel = async (
       font: { color: { rgb: textColor }, bold: true },
       fill: { fgColor: { rgb: bgColor } },
       alignment: { horizontal: "right", vertical: "center" }
+    };
+  }
+
+  // Add conditional formatting for office column
+  const officeColIndex = 2; // Office column (0-indexed)
+  const officeColors = [
+    { bg: "DBEAFE", text: "1E40AF" }, // Blue
+    { bg: "D1FAE5", text: "059669" }, // Green
+    { bg: "FEF3C7", text: "D97706" }, // Yellow
+    { bg: "FECACA", text: "DC2626" }, // Red
+    { bg: "E9D5FF", text: "7C3AED" }, // Purple
+    { bg: "FED7D7", text: "E53E3E" }, // Pink
+  ];
+  
+  const uniqueOffices = Array.from(new Set(records.map(r => r.office)));
+  for (let row = 1; row <= excelData.length; row++) {
+    const cellAddress = XLSX.utils.encode_cell({ r: row, c: officeColIndex });
+    if (!worksheet[cellAddress]) continue;
+    
+    const office = worksheet[cellAddress].v;
+    const officeIndex = uniqueOffices.indexOf(office);
+    const colorIndex = officeIndex % officeColors.length;
+    const colors = officeColors[colorIndex];
+    
+    worksheet[cellAddress].s = {
+      font: { color: { rgb: colors.text }, bold: true },
+      fill: { fgColor: { rgb: colors.bg } },
+      alignment: { horizontal: "center", vertical: "center" }
     };
   }
 
@@ -119,7 +149,59 @@ export const exportInternetDataToExcel = async (
 
   XLSX.utils.book_append_sheet(workbook, summaryWorksheet, 'Summary');
 
-  // Create monthly breakdown sheet if we have multiple months
+  // Create office breakdown sheet if we have multiple offices
+  if (Object.keys(stats.officeBreakdown).length > 1) {
+    const officeData = Object.entries(stats.officeBreakdown).map(([office, data]) => ({
+      'Office': office,
+      'Total Records': data.records,
+      'Total Data Used (GB)': data.usage.toFixed(2),
+      'Average per Record (GB)': (data.usage / data.records).toFixed(2),
+      'Percentage of Total Usage': ((data.usage / stats.totalUsage) * 100).toFixed(1) + '%'
+    }));
+
+    const officeWorksheet = XLSX.utils.json_to_sheet(officeData);
+    officeWorksheet['!cols'] = [
+      { wch: 20 }, // Office
+      { wch: 15 }, // Total Records
+      { wch: 18 }, // Total Data Used
+      { wch: 20 }, // Average per Record
+      { wch: 22 }, // Percentage of Total
+    ];
+
+    // Style office sheet header
+    const officeHeaderRange = XLSX.utils.decode_range(officeWorksheet['!ref'] || 'A1');
+    for (let col = officeHeaderRange.s.c; col <= officeHeaderRange.e.c; col++) {
+      const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col });
+      if (!officeWorksheet[cellAddress]) continue;
+      
+      officeWorksheet[cellAddress].s = {
+        font: { bold: true, color: { rgb: "FFFFFF" } },
+        fill: { fgColor: { rgb: "7C3AED" } },
+        alignment: { horizontal: "center", vertical: "center" }
+      };
+    }
+
+    // Color code office names in the breakdown sheet
+    for (let row = 1; row <= officeData.length; row++) {
+      const cellAddress = XLSX.utils.encode_cell({ r: row, c: 0 }); // Office column
+      if (!officeWorksheet[cellAddress]) continue;
+      
+      const office = officeWorksheet[cellAddress].v;
+      const officeIndex = uniqueOffices.indexOf(office);
+      const colorIndex = officeIndex % officeColors.length;
+      const colors = officeColors[colorIndex];
+      
+      officeWorksheet[cellAddress].s = {
+        font: { color: { rgb: colors.text }, bold: true },
+        fill: { fgColor: { rgb: colors.bg } },
+        alignment: { horizontal: "center", vertical: "center" }
+      };
+    }
+
+    XLSX.utils.book_append_sheet(workbook, officeWorksheet, 'Office Breakdown');
+  }
+
+  // Create monthly breakdown sheet if we have data from multiple periods
   const monthlyData = records.reduce((acc, record) => {
     const date = new Date(record.date);
     const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
@@ -132,27 +214,32 @@ export const exportInternetDataToExcel = async (
         'Total Work Hours': 0,
         'Number of Days': 0,
         'Average Daily Usage (GB)': 0,
-        'Usage per Hour (GB)': 0
+        'Usage per Hour (GB)': 0,
+        'Offices': new Set<string>()
       };
     }
     
     acc[monthKey]['Total Data Used (GB)'] += record.usage;
     acc[monthKey]['Total Work Hours'] += record.workHours;
     acc[monthKey]['Number of Days'] += 1;
+    acc[monthKey]['Offices'].add(record.office);
     
     return acc;
   }, {} as Record<string, any>);
 
-  // Only create monthly breakdown if we have data from multiple periods
-  if (Object.keys(monthlyData).length > 0) {
-    // Calculate averages for monthly data
-    Object.values(monthlyData).forEach((month: any) => {
-      month['Average Daily Usage (GB)'] = (month['Total Data Used (GB)'] / month['Number of Days']).toFixed(2);
-      month['Usage per Hour (GB)'] = (month['Total Data Used (GB)'] / month['Total Work Hours']).toFixed(2);
-      month['Total Data Used (GB)'] = month['Total Data Used (GB)'].toFixed(2);
-    });
+  if (Object.keys(monthlyData).length > 1) {
+    // Calculate averages and format for export
+    const monthlyExportData = Object.values(monthlyData).map((month: any) => ({
+      'Month': month.Month,
+      'Total Data Used (GB)': month['Total Data Used (GB)'].toFixed(2),
+      'Total Work Hours': month['Total Work Hours'],
+      'Number of Days': month['Number of Days'],
+      'Average Daily Usage (GB)': (month['Total Data Used (GB)'] / month['Number of Days']).toFixed(2),
+      'Usage per Hour (GB)': (month['Total Data Used (GB)'] / month['Total Work Hours']).toFixed(2),
+      'Offices Involved': Array.from(month['Offices']).join(', ')
+    }));
 
-    const monthlyWorksheet = XLSX.utils.json_to_sheet(Object.values(monthlyData));
+    const monthlyWorksheet = XLSX.utils.json_to_sheet(monthlyExportData);
     monthlyWorksheet['!cols'] = [
       { wch: 20 }, // Month
       { wch: 18 }, // Total Data Used
@@ -160,6 +247,7 @@ export const exportInternetDataToExcel = async (
       { wch: 15 }, // Number of Days
       { wch: 20 }, // Average Daily Usage
       { wch: 18 }, // Usage per Hour
+      { wch: 30 }, // Offices Involved
     ];
 
     // Style monthly sheet header
@@ -170,12 +258,12 @@ export const exportInternetDataToExcel = async (
       
       monthlyWorksheet[cellAddress].s = {
         font: { bold: true, color: { rgb: "FFFFFF" } },
-        fill: { fgColor: { rgb: "7C3AED" } },
+        fill: { fgColor: { rgb: "F59E0B" } },
         alignment: { horizontal: "center", vertical: "center" }
       };
     }
 
-    XLSX.utils.book_append_sheet(workbook, monthlyWorksheet, 'Period Breakdown');
+    XLSX.utils.book_append_sheet(workbook, monthlyWorksheet, 'Monthly Breakdown');
   }
 
   // Generate filename with current date and optional suffix

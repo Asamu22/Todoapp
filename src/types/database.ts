@@ -54,6 +54,7 @@ export interface Database {
           end_balance: number;
           usage: number;
           work_hours: number;
+          office: string;
           notes: string | null;
           created_at: string;
           updated_at: string;
@@ -66,6 +67,7 @@ export interface Database {
           end_balance: number;
           usage: number;
           work_hours: number;
+          office: string;
           notes?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -78,6 +80,7 @@ export interface Database {
           end_balance?: number;
           usage?: number;
           work_hours?: number;
+          office?: string;
           notes?: string | null;
           created_at?: string;
           updated_at?: string;

@@ -5,6 +5,7 @@ export interface InternetRecord {
   endBalance: number;
   usage: number;
   workHours: number;
+  office: string;
   notes?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -17,4 +18,5 @@ export interface InternetStats {
   averageWorkHours: number;
   currentMonthUsage: number;
   lastWeekUsage: number;
+  officeBreakdown: { [office: string]: { records: number; usage: number } };
 }
