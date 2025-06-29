@@ -6,6 +6,7 @@ import { ProgressChart } from './components/ProgressChart';
 import { FilterBar } from './components/FilterBar';
 import { LoginPage } from './components/LoginPage';
 import { Header } from './components/Header';
+import { ExportPage } from './components/ExportPage';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { useNotifications } from './hooks/useNotifications';
 import { useAuth } from './hooks/useAuth';
@@ -17,6 +18,7 @@ function App() {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedPriority, setSelectedPriority] = useState('All');
   const [showCompleted, setShowCompleted] = useState(true);
+  const [currentView, setCurrentView] = useState<'tasks' | 'export'>('tasks');
 
   // Enable notifications only when authenticated
   useNotifications(isAuthenticated ? todos : []);
@@ -119,12 +121,17 @@ function App() {
     return <LoginPage onLogin={login} />;
   }
 
+  // Show export page if selected
+  if (currentView === 'export') {
+    return <ExportPage todos={todos} onBack={() => setCurrentView('tasks')} />;
+  }
+
   // Show main application if authenticated
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
-        {/* Header with logout */}
-        <Header onLogout={logout} />
+        {/* Header with logout and export */}
+        <Header onLogout={logout} onExport={() => setCurrentView('export')} />
 
         {/* Progress Chart */}
         <ProgressChart 

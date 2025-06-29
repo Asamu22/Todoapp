@@ -1,11 +1,12 @@
 import React from 'react';
-import { CheckSquare, Bell, LogOut } from 'lucide-react';
+import { CheckSquare, Bell, LogOut, Download } from 'lucide-react';
 
 interface HeaderProps {
   onLogout: () => void;
+  onExport: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onLogout }) => {
+export const Header: React.FC<HeaderProps> = ({ onLogout, onExport }) => {
   return (
     <div className="text-center mb-8">
       <div className="flex items-center justify-center gap-3 mb-4 relative">
@@ -15,14 +16,25 @@ export const Header: React.FC<HeaderProps> = ({ onLogout }) => {
         </h1>
         <Bell className="w-6 h-6 text-purple-600" />
         
-        <button
-          onClick={onLogout}
-          className="absolute right-0 flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
-          title="Sign Out"
-        >
-          <LogOut className="w-4 h-4" />
-          <span className="hidden sm:inline">Sign Out</span>
-        </button>
+        <div className="absolute right-0 flex items-center gap-2">
+          <button
+            onClick={onExport}
+            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all duration-200"
+            title="Export Data"
+          >
+            <Download className="w-4 h-4" />
+            <span className="hidden sm:inline">Export</span>
+          </button>
+          
+          <button
+            onClick={onLogout}
+            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
+            title="Sign Out"
+          >
+            <LogOut className="w-4 h-4" />
+            <span className="hidden sm:inline">Sign Out</span>
+          </button>
+        </div>
       </div>
       <p className="text-gray-600 text-lg">
         Organize your daily activities with smart notifications and progress tracking
