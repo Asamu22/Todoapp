@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { ArrowLeft, Download, FileSpreadsheet, Calendar, Filter, TrendingUp } from 'lucide-react';
+import { ArrowLeft, Download, FileSpreadsheet, Calendar, Filter, TrendingUp, BarChart3 } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, ComposedChart, Area, AreaChart } from 'recharts';
 import { InternetRecord, InternetStats } from '../types/internet';
 import { exportInternetDataToExcel } from '../utils/internetExcelExport';
 
@@ -123,6 +124,24 @@ export const InternetExportPage: React.FC<InternetExportPageProps> = ({ records,
     };
   }, [filteredRecords]);
 
+  // Prepare chart data
+  const chartData = useMemo(() => {
+    return filteredRecords
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      .map(record => ({
+        date: new Date(record.date).toLocaleDateString('en-US', { 
+          month: 'short', 
+          day: 'numeric' 
+        }),
+        fullDate: record.date,
+        usage: parseFloat(record.usage.toFixed(2)),
+        startBalance: parseFloat(record.startBalance.toFixed(2)),
+        endBalance: parseFloat(record.endBalance.toFixed(2)),
+        workHours: record.workHours,
+        usagePerHour: parseFloat((record.usage / record.workHours).toFixed(2))
+      }));
+  }, [filteredRecords]);
+
   const handleExport = async () => {
     if (filteredRecords.length === 0) return;
     
@@ -205,7 +224,7 @@ export const InternetExportPage: React.FC<InternetExportPageProps> = ({ records,
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
           <button
@@ -222,6 +241,204 @@ export const InternetExportPage: React.FC<InternetExportPageProps> = ({ records,
             </h1>
           </div>
         </div>
+
+        {/* Data Visualization Charts */}
+        {chartData.length > 0 && (
+          <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
+            <div className="flex items-center gap-3 mb-6">
+              <BarChart3 className="w-6 h-6 text-blue-600" />
+              <h2 className="text-xl font-semibold text-gray-800">Data Usage Analytics</h2>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Daily Usage Line Chart */}
+              <div>
+                <h3 className="text-lg font-medium text-gray-700 mb-3">Daily Data Usage Trend</h3>
+                <ResponsiveContainer width="100%" height={250}>
+                  <LineChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis 
+                      dataKey="date" 
+                      stroke="#666"
+                      fontSize={12}
+                      angle={-45}
+                      textAnchor="end"
+                      height={60}
+                    />
+                    <YAxis 
+                      stroke="#666"
+                      fontSize={12}
+                      label={{ value: 'Data (GB)', angle: -90, position: 'insideLeft' }}
+                    />
+                    <Tooltip 
+                      contentStyle={{
+                        backgroundColor: '#fff',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                      }}
+                      formatter={(value: number, name: string) => [
+                        `${value.toFixed(2)} GB`,
+                        name === 'usage' ? 'Data Used' : name
+                      ]}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="usage" 
+                      stroke="#dc2626" 
+                      strokeWidth={3}
+                      dot={{ fill: '#dc2626', strokeWidth: 2, r: 4 }}
+                      activeDot={{ r: 6, stroke: '#dc2626', strokeWidth: 2 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Usage per Hour Bar Chart */}
+              <div>
+                <h3 className="text-lg font-medium text-gray-700 mb-3">Data Usage per Work Hour</h3>
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis 
+                      dataKey="date" 
+                      stroke="#666"
+                      fontSize={12}
+                      angle={-45}
+                      textAnchor="end"
+                      height={60}
+                    />
+                    <YAxis 
+                      stroke="#666"
+                      fontSize={12}
+                      label={{ value: 'GB/Hour', angle: -90, position: 'insideLeft' }}
+                    />
+                    <Tooltip 
+                      contentStyle={{
+                        backgroundColor: '#fff',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                      }}
+                      formatter={(value: number) => [`${value.toFixed(2)} GB/hour`, 'Usage Rate']}
+                    />
+                    <Bar 
+                      dataKey="usagePerHour" 
+                      fill="#7c3aed" 
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Balance Trend Area Chart */}
+              <div>
+                <h3 className="text-lg font-medium text-gray-700 mb-3">Data Balance Trend</h3>
+                <ResponsiveContainer width="100%" height={250}>
+                  <AreaChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis 
+                      dataKey="date" 
+                      stroke="#666"
+                      fontSize={12}
+                      angle={-45}
+                      textAnchor="end"
+                      height={60}
+                    />
+                    <YAxis 
+                      stroke="#666"
+                      fontSize={12}
+                      label={{ value: 'Balance (GB)', angle: -90, position: 'insideLeft' }}
+                    />
+                    <Tooltip 
+                      contentStyle={{
+                        backgroundColor: '#fff',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                      }}
+                      formatter={(value: number, name: string) => [
+                        `${value.toFixed(2)} GB`,
+                        name === 'startBalance' ? 'Start Balance' : 'End Balance'
+                      ]}
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="startBalance" 
+                      stackId="1"
+                      stroke="#059669" 
+                      fill="#d1fae5"
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="endBalance" 
+                      stackId="2"
+                      stroke="#2563eb" 
+                      fill="#dbeafe"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Combined Usage and Work Hours */}
+              <div>
+                <h3 className="text-lg font-medium text-gray-700 mb-3">Usage vs Work Hours</h3>
+                <ResponsiveContainer width="100%" height={250}>
+                  <ComposedChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis 
+                      dataKey="date" 
+                      stroke="#666"
+                      fontSize={12}
+                      angle={-45}
+                      textAnchor="end"
+                      height={60}
+                    />
+                    <YAxis 
+                      yAxisId="left"
+                      stroke="#666"
+                      fontSize={12}
+                      label={{ value: 'Data (GB)', angle: -90, position: 'insideLeft' }}
+                    />
+                    <YAxis 
+                      yAxisId="right"
+                      orientation="right"
+                      stroke="#666"
+                      fontSize={12}
+                      label={{ value: 'Hours', angle: 90, position: 'insideRight' }}
+                    />
+                    <Tooltip 
+                      contentStyle={{
+                        backgroundColor: '#fff',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                      }}
+                      formatter={(value: number, name: string) => [
+                        name === 'workHours' ? `${value} hours` : `${value.toFixed(2)} GB`,
+                        name === 'usage' ? 'Data Used' : 'Work Hours'
+                      ]}
+                    />
+                    <Bar 
+                      yAxisId="left"
+                      dataKey="usage" 
+                      fill="#f59e0b" 
+                      radius={[4, 4, 0, 0]}
+                    />
+                    <Line 
+                      yAxisId="right"
+                      type="monotone" 
+                      dataKey="workHours" 
+                      stroke="#10b981" 
+                      strokeWidth={3}
+                      dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
+                    />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Filter Options */}
