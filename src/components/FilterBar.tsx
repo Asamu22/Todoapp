@@ -10,6 +10,8 @@ interface FilterBarProps {
   onPriorityChange: (priority: string) => void;
   showCompleted: boolean;
   onShowCompletedChange: (show: boolean) => void;
+  dateFilter: string;
+  onDateFilterChange: (filter: string) => void;
 }
 
 const categories = ['All', 'Work', 'Personal', 'Health', 'Learning', 'Shopping', 'Other'];
@@ -23,10 +25,10 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   selectedPriority,
   onPriorityChange,
   showCompleted,
-  onShowCompletedChange
+  onShowCompletedChange,
+  dateFilter,
+  onDateFilterChange
 }) => {
-  const [dateFilter, setDateFilter] = React.useState('all');
-
   return (
     <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
       <div className="flex items-center gap-3 mb-4">
@@ -70,7 +72,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
           <Calendar className="w-4 h-4 text-gray-500" />
           <select
             value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value)}
+            onChange={(e) => onDateFilterChange(e.target.value)}
             className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="all">All dates</option>

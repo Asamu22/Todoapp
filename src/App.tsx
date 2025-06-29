@@ -19,10 +19,112 @@ function App() {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedPriority, setSelectedPriority] = useState('All');
   const [showCompleted, setShowCompleted] = useState(true);
+  const [dateFilter, setDateFilter] = useState('all');
   const [currentView, setCurrentView] = useState<'tasks' | 'export'>('tasks');
 
   // Enable notifications only when authenticated
   useNotifications(user ? todos : []);
+
+  // Helper function to check if a date matches the filter
+  const matchesDateFilter = (todo: Todo, filter: string): boolean => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const weekFromNow = new Date(today);
+    weekFromNow.setDate(weekFromNow.getDate() + 7);
+
+    switch (filter) {
+      case 'all':
+        return true;
+      
+      case 'today': {
+        // Check if task is scheduled for today
+        if (todo.scheduledFor) {
+          const scheduledDate = new Date(todo.scheduledFor.getFullYear(), todo.scheduledFor.getMonth(), todo.scheduledFor.getDate());
+          return scheduledDate.getTime() === today.getTime();
+        }
+        if (todo.dueDate) {
+          const dueDate = new Date(todo.dueDate);
+          return dueDate.getTime() === today.getTime();
+        }
+        // If no specific date, check if it was created today and has a time
+        if (todo.dueTime && !todo.dueDate) {
+          const createdDate = new Date(todo.createdAt.getFullYear(), todo.createdAt.getMonth(), todo.createdAt.getDate());
+          return createdDate.getTime() === today.getTime();
+        }
+        return false;
+      }
+      
+      case 'tomorrow': {
+        if (todo.scheduledFor) {
+          const scheduledDate = new Date(todo.scheduledFor.getFullYear(), todo.scheduledFor.getMonth(), todo.scheduledFor.getDate());
+          return scheduledDate.getTime() === tomorrow.getTime();
+        }
+        if (todo.dueDate) {
+          const dueDate = new Date(todo.dueDate);
+          return dueDate.getTime() === tomorrow.getTime();
+        }
+        return false;
+      }
+      
+      case 'week': {
+        if (todo.scheduledFor) {
+          const scheduledDate = new Date(todo.scheduledFor.getFullYear(), todo.scheduledFor.getMonth(), todo.scheduledFor.getDate());
+          return scheduledDate >= today && scheduledDate < weekFromNow;
+        }
+        if (todo.dueDate) {
+          const dueDate = new Date(todo.dueDate);
+          return dueDate >= today && dueDate < weekFromNow;
+        }
+        return false;
+      }
+      
+      case 'overdue': {
+        if (todo.completed) return false;
+        
+        if (todo.scheduledFor) {
+          return todo.scheduledFor < now;
+        }
+        
+        if (todo.dueDate) {
+          const dueDate = new Date(todo.dueDate);
+          if (todo.dueTime) {
+            const [hours, minutes] = todo.dueTime.split(':').map(Number);
+            dueDate.setHours(hours, minutes);
+          } else {
+            dueDate.setHours(23, 59, 59); // End of day if no time specified
+          }
+          return dueDate < now;
+        }
+        
+        // Legacy: only time without date (assume today)
+        if (todo.dueTime && !todo.dueDate) {
+          const [hours, minutes] = todo.dueTime.split(':').map(Number);
+          const todayWithTime = new Date();
+          todayWithTime.setHours(hours, minutes, 0, 0);
+          return todayWithTime < now;
+        }
+        
+        return false;
+      }
+      
+      case 'future': {
+        if (todo.scheduledFor) {
+          const scheduledDate = new Date(todo.scheduledFor.getFullYear(), todo.scheduledFor.getMonth(), todo.scheduledFor.getDate());
+          return scheduledDate > today;
+        }
+        if (todo.dueDate) {
+          const dueDate = new Date(todo.dueDate);
+          return dueDate > today;
+        }
+        return false;
+      }
+      
+      default:
+        return true;
+    }
+  };
 
   // Filter todos
   const filteredTodos = useMemo(() => {
@@ -33,10 +135,11 @@ function App() {
       const matchesPriority = selectedPriority === 'All' || 
                              todo.priority.toLowerCase() === selectedPriority.toLowerCase();
       const matchesCompleted = showCompleted || !todo.completed;
+      const matchesDate = matchesDateFilter(todo, dateFilter);
 
-      return matchesSearch && matchesCategory && matchesPriority && matchesCompleted;
+      return matchesSearch && matchesCategory && matchesPriority && matchesCompleted && matchesDate;
     });
-  }, [todos, searchTerm, selectedCategory, selectedPriority, showCompleted]);
+  }, [todos, searchTerm, selectedCategory, selectedPriority, showCompleted, dateFilter]);
 
   // Generate progress data for the last 7 days
   const progressData: ProgressData[] = useMemo(() => {
@@ -129,6 +232,8 @@ function App() {
           onPriorityChange={setSelectedPriority}
           showCompleted={showCompleted}
           onShowCompletedChange={setShowCompleted}
+          dateFilter={dateFilter}
+          onDateFilterChange={setDateFilter}
         />
 
         {/* Error Display */}
