@@ -129,7 +129,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
         {/* Footer */}
         <div className="text-center mt-8">
           <p className="text-sm text-gray-500">
-            © 2025 Daily Activity Tracker. All rights reserved.
+            © 2025 Acaltech. All rights reserved.
           </p>
         </div>
       </div>
