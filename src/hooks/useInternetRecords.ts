@@ -29,6 +29,24 @@ const handleJWTExpired = async (error: any) => {
   }
 };
 
+// Helper function to normalize office names (case-insensitive)
+const normalizeOfficeName = (officeName: string): string => {
+  return officeName.trim().toLowerCase();
+};
+
+// Helper function to find existing office name with proper casing
+const findExistingOfficeName = (records: InternetRecord[], inputOfficeName: string): string => {
+  const normalizedInput = normalizeOfficeName(inputOfficeName);
+  
+  // Find an existing record with the same normalized office name
+  const existingRecord = records.find(record => 
+    normalizeOfficeName(record.office) === normalizedInput
+  );
+  
+  // Return the existing office name with proper casing, or the input if not found
+  return existingRecord ? existingRecord.office : inputOfficeName.trim();
+};
+
 export const useInternetRecords = (userId: string | null) => {
   const [records, setRecords] = useState<InternetRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,6 +89,9 @@ export const useInternetRecords = (userId: string | null) => {
     try {
       const usage = recordData.startBalance - recordData.endBalance;
       
+      // Use existing office name casing if available
+      const officeName = findExistingOfficeName(records, recordData.office);
+      
       const insertData: InternetRecordInsert = {
         user_id: userId,
         date: recordData.date,
@@ -78,7 +99,7 @@ export const useInternetRecords = (userId: string | null) => {
         end_balance: recordData.endBalance,
         usage: usage,
         work_hours: recordData.workHours,
-        office: recordData.office,
+        office: officeName,
         notes: recordData.notes || null
       };
 
@@ -109,10 +130,15 @@ export const useInternetRecords = (userId: string | null) => {
         ...(updates.startBalance !== undefined && { start_balance: updates.startBalance }),
         ...(updates.endBalance !== undefined && { end_balance: updates.endBalance }),
         ...(updates.workHours !== undefined && { work_hours: updates.workHours }),
-        ...(updates.office && { office: updates.office }),
         ...(updates.notes !== undefined && { notes: updates.notes || null }),
         updated_at: new Date().toISOString()
       };
+
+      // Handle office name with case-insensitive matching
+      if (updates.office) {
+        const officeName = findExistingOfficeName(records, updates.office);
+        updateData.office = officeName;
+      }
 
       // Calculate usage if start or end balance changed
       if (updates.startBalance !== undefined || updates.endBalance !== undefined) {

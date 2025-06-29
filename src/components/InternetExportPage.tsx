@@ -11,6 +11,30 @@ interface InternetExportPageProps {
 
 type DateFilterType = 'all' | 'month' | 'week' | 'day' | 'custom';
 
+// Helper function to normalize office names for comparison (case-insensitive)
+const normalizeOfficeName = (officeName: string): string => {
+  return officeName.trim().toLowerCase();
+};
+
+// Helper function to get unique offices with case-insensitive grouping
+const getUniqueOffices = (records: InternetRecord[]): string[] => {
+  const officeMap = new Map<string, string>();
+  
+  records.forEach(record => {
+    const normalized = normalizeOfficeName(record.office);
+    if (!officeMap.has(normalized)) {
+      officeMap.set(normalized, record.office);
+    }
+  });
+  
+  return Array.from(officeMap.values()).sort();
+};
+
+// Helper function to check if office names match (case-insensitive)
+const officeNamesMatch = (office1: string, office2: string): boolean => {
+  return normalizeOfficeName(office1) === normalizeOfficeName(office2);
+};
+
 export const InternetExportPage: React.FC<InternetExportPageProps> = ({ records, onBack }) => {
   const [filterType, setFilterType] = useState<DateFilterType>('all');
   const [selectedMonth, setSelectedMonth] = useState('');
@@ -21,10 +45,10 @@ export const InternetExportPage: React.FC<InternetExportPageProps> = ({ records,
   const [selectedOffice, setSelectedOffice] = useState('All');
   const [isExporting, setIsExporting] = useState(false);
 
-  // Get available offices from records
+  // Get available offices from records with case-insensitive grouping
   const availableOffices = useMemo(() => {
-    const offices = Array.from(new Set(records.map(record => record.office)));
-    return ['All', ...offices.sort()];
+    const uniqueOffices = getUniqueOffices(records);
+    return ['All', ...uniqueOffices];
   }, [records]);
 
   // Get available months from records
@@ -76,13 +100,13 @@ export const InternetExportPage: React.FC<InternetExportPageProps> = ({ records,
     return monthRecords.map(record => record.date).sort().reverse();
   }, [records, selectedMonth]);
 
-  // Filter records based on selected criteria
+  // Filter records based on selected criteria with case-insensitive office matching
   const filteredRecords = useMemo(() => {
     let filtered = records;
 
-    // Filter by office first
+    // Filter by office first with case-insensitive matching
     if (selectedOffice !== 'All') {
-      filtered = filtered.filter(record => record.office === selectedOffice);
+      filtered = filtered.filter(record => officeNamesMatch(record.office, selectedOffice));
     }
 
     // Then filter by date
@@ -122,20 +146,29 @@ export const InternetExportPage: React.FC<InternetExportPageProps> = ({ records,
     }
   }, [records, selectedOffice, filterType, selectedMonth, selectedWeek, selectedDay, customStartDate, customEndDate]);
 
-  // Calculate statistics for filtered records
+  // Calculate statistics for filtered records with case-insensitive office grouping
   const filteredStats: InternetStats = useMemo(() => {
     const totalRecords = filteredRecords.length;
     const totalUsage = filteredRecords.reduce((sum, record) => sum + record.usage, 0);
     const averageUsage = totalRecords > 0 ? totalUsage / totalRecords : 0;
     const averageWorkHours = totalRecords > 0 ? filteredRecords.reduce((sum, record) => sum + record.workHours, 0) / totalRecords : 0;
     
-    // Calculate office breakdown for filtered records
+    // Calculate office breakdown for filtered records with case-insensitive grouping
     const officeBreakdown = filteredRecords.reduce((acc, record) => {
-      if (!acc[record.office]) {
-        acc[record.office] = { records: 0, usage: 0 };
+      // Find existing office key with case-insensitive matching
+      let officeKey = record.office;
+      for (const existingKey of Object.keys(acc)) {
+        if (officeNamesMatch(existingKey, record.office)) {
+          officeKey = existingKey;
+          break;
+        }
       }
-      acc[record.office].records += 1;
-      acc[record.office].usage += record.usage;
+      
+      if (!acc[officeKey]) {
+        acc[officeKey] = { records: 0, usage: 0 };
+      }
+      acc[officeKey].records += 1;
+      acc[officeKey].usage += record.usage;
       return acc;
     }, {} as { [office: string]: { records: number; usage: number } });
     
@@ -434,7 +467,10 @@ export const InternetExportPage: React.FC<InternetExportPageProps> = ({ records,
             <div className="space-y-6">
               {/* Office Filter */}
               <div>
-                <h3 className="text-sm font-medium text-gray-700 mb-3">Office</h3>
+                <h3 className="text-sm font-medium text-gray-700 mb-3">
+                  Office
+                  <span className="text-xs text-gray-500 ml-1">(case-insensitive)</span>
+                </h3>
                 <div className="flex items-center gap-2">
                   <Building2 className="w-4 h-4 text-gray-500" />
                   <select
@@ -732,6 +768,7 @@ export const InternetExportPage: React.FC<InternetExportPageProps> = ({ records,
               <li>• Color-coded usage levels</li>
               <li>• Detailed statistics</li>
               <li>• Professional formatting</li>
+              <li>• Case-insensitive office grouping</li>
             </ul>
           </div>
         </div>

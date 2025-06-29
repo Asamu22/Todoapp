@@ -10,6 +10,30 @@ interface InternetMonitoringPageProps {
   onBack: () => void;
 }
 
+// Helper function to normalize office names for comparison (case-insensitive)
+const normalizeOfficeName = (officeName: string): string => {
+  return officeName.trim().toLowerCase();
+};
+
+// Helper function to get unique offices with case-insensitive grouping
+const getUniqueOffices = (records: InternetRecord[]): string[] => {
+  const officeMap = new Map<string, string>();
+  
+  records.forEach(record => {
+    const normalized = normalizeOfficeName(record.office);
+    if (!officeMap.has(normalized)) {
+      officeMap.set(normalized, record.office);
+    }
+  });
+  
+  return Array.from(officeMap.values()).sort();
+};
+
+// Helper function to check if office names match (case-insensitive)
+const officeNamesMatch = (office1: string, office2: string): boolean => {
+  return normalizeOfficeName(office1) === normalizeOfficeName(office2);
+};
+
 export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ userId, onBack }) => {
   const { records, loading, error, addRecord, updateRecord, deleteRecord } = useInternetRecords(userId);
   
@@ -36,21 +60,21 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
     notes: ''
   });
 
-  // Get unique offices from records
+  // Get unique offices from records with case-insensitive grouping
   const availableOffices = useMemo(() => {
-    const offices = Array.from(new Set(records.map(record => record.office)));
-    return ['All', ...offices.sort()];
+    const uniqueOffices = getUniqueOffices(records);
+    return ['All', ...uniqueOffices];
   }, [records]);
 
-  // Filter records by selected office
+  // Filter records by selected office with case-insensitive matching
   const filteredRecords = useMemo(() => {
     if (selectedOffice === 'All') {
       return records;
     }
-    return records.filter(record => record.office === selectedOffice);
+    return records.filter(record => officeNamesMatch(record.office, selectedOffice));
   }, [records, selectedOffice]);
 
-  // Calculate statistics for filtered records
+  // Calculate statistics for filtered records with case-insensitive office grouping
   const stats: InternetStats = useMemo(() => {
     const recordsToAnalyze = filteredRecords;
     const totalRecords = recordsToAnalyze.length;
@@ -73,13 +97,22 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
       .filter(record => new Date(record.date) >= lastWeek)
       .reduce((sum, record) => sum + record.usage, 0);
 
-    // Calculate office breakdown from all records (not filtered)
+    // Calculate office breakdown from all records (not filtered) with case-insensitive grouping
     const officeBreakdown = records.reduce((acc, record) => {
-      if (!acc[record.office]) {
-        acc[record.office] = { records: 0, usage: 0 };
+      // Find existing office key with case-insensitive matching
+      let officeKey = record.office;
+      for (const existingKey of Object.keys(acc)) {
+        if (officeNamesMatch(existingKey, record.office)) {
+          officeKey = existingKey;
+          break;
+        }
       }
-      acc[record.office].records += 1;
-      acc[record.office].usage += record.usage;
+      
+      if (!acc[officeKey]) {
+        acc[officeKey] = { records: 0, usage: 0 };
+      }
+      acc[officeKey].records += 1;
+      acc[officeKey].usage += record.usage;
       return acc;
     }, {} as { [office: string]: { records: number; usage: number } });
 
@@ -451,7 +484,10 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Office</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Office
+                <span className="text-xs text-gray-500 ml-1">(case-insensitive)</span>
+              </label>
               <input
                 type="text"
                 value={formData.office}
@@ -460,6 +496,11 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
                 placeholder="e.g., Main Office, Branch A, Remote"
                 required
               />
+              {availableOffices.length > 1 && (
+                <div className="mt-1 text-xs text-gray-500">
+                  Existing offices: {availableOffices.filter(o => o !== 'All').join(', ')}
+                </div>
+              )}
             </div>
 
             <div>
