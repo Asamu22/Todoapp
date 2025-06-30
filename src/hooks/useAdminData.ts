@@ -31,7 +31,7 @@ const convertAuditLog = (row: any): AuditLog => ({
   ipAddress: row.ip_address,
   userAgent: row.user_agent,
   createdAt: new Date(row.created_at),
-  userEmail: row.user_email
+  userEmail: row.user_profiles?.email || 'Unknown'
 });
 
 const convertDeletedRecord = (row: any): DeletedRecord => ({
@@ -43,8 +43,8 @@ const convertDeletedRecord = (row: any): DeletedRecord => ({
   deletedBy: row.deleted_by,
   deletedAt: new Date(row.deleted_at),
   deletionReason: row.deletion_reason,
-  userEmail: row.user_email,
-  deletedByEmail: row.deleted_by_email
+  userEmail: row.user_profiles?.email || 'Unknown',
+  deletedByEmail: row.deleted_by_profile?.email || 'Unknown'
 });
 
 export const useAdminData = () => {
@@ -98,7 +98,7 @@ export const useAdminData = () => {
     }
   };
 
-  // Fetch audit logs with user email
+  // Fetch audit logs with user email using the new foreign key relationship
   const fetchAuditLogs = async (limit = 100) => {
     try {
       const { data, error } = await supabase
@@ -112,39 +112,28 @@ export const useAdminData = () => {
 
       if (error) throw error;
       
-      const logsWithEmail = data.map(row => ({
-        ...row,
-        user_email: row.user_profiles?.email
-      }));
-      
-      setAuditLogs(logsWithEmail.map(convertAuditLog));
+      setAuditLogs(data.map(convertAuditLog));
     } catch (err) {
       console.error('Error fetching audit logs:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch audit logs');
     }
   };
 
-  // Fetch deleted records with user emails
+  // Fetch deleted records with user emails using the new foreign key relationships
   const fetchDeletedRecords = async () => {
     try {
       const { data, error } = await supabase
         .from('deleted_records')
         .select(`
           *,
-          user_profiles!deleted_records_user_id_fkey(email),
-          deleted_by_profile:user_profiles!deleted_records_deleted_by_fkey(email)
+          user_profiles(email),
+          deleted_by_profile:user_profiles!deleted_records_deleted_by_profiles_fkey(email)
         `)
         .order('deleted_at', { ascending: false });
 
       if (error) throw error;
       
-      const recordsWithEmails = data.map(row => ({
-        ...row,
-        user_email: row.user_profiles?.email,
-        deleted_by_email: row.deleted_by_profile?.email
-      }));
-      
-      setDeletedRecords(recordsWithEmails.map(convertDeletedRecord));
+      setDeletedRecords(data.map(convertDeletedRecord));
     } catch (err) {
       console.error('Error fetching deleted records:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch deleted records');
