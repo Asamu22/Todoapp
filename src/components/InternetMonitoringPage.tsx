@@ -48,7 +48,8 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
     show: boolean;
     recordId: string;
     recordDate: string;
-  }>({ show: false, recordId: '', recordDate: '' });
+    recordOffice: string;
+  }>({ show: false, recordId: '', recordDate: '', recordOffice: '' });
   
   // Form states
   const [formData, setFormData] = useState({
@@ -167,8 +168,11 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
         });
         setEditingId(null);
       } else {
-        // Check if a record already exists for this date
-        const existingRecord = records.find(record => record.date === formData.date);
+        // Check if a record already exists for this date AND office combination
+        const existingRecord = records.find(record => 
+          record.date === formData.date && 
+          officeNamesMatch(record.office, formData.office.trim())
+        );
         
         if (existingRecord) {
           // Update the existing record instead of creating a new one
@@ -180,7 +184,7 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
             office: formData.office.trim(),
             notes: formData.notes.trim() || undefined
           });
-          setActionError(`Updated existing record for ${new Date(formData.date).toLocaleDateString()}`);
+          setActionError(`Updated existing record for ${new Date(formData.date).toLocaleDateString()} - ${formData.office.trim()}`);
         } else {
           // Create a new record
           await addRecord({
@@ -255,7 +259,8 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
         year: 'numeric',
         month: 'long',
         day: 'numeric'
-      })
+      }),
+      recordOffice: record.office
     });
   };
 
@@ -264,7 +269,7 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
     
     setDeletingId(recordId);
     setActionError(null);
-    setDeleteConfirmation({ show: false, recordId: '', recordDate: '' });
+    setDeleteConfirmation({ show: false, recordId: '', recordDate: '', recordOffice: '' });
 
     try {
       await deleteRecord(recordId);
@@ -278,7 +283,7 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
   };
 
   const handleCancelDelete = () => {
-    setDeleteConfirmation({ show: false, recordId: '', recordDate: '' });
+    setDeleteConfirmation({ show: false, recordId: '', recordDate: '', recordOffice: '' });
   };
 
   const formatDataUsage = (amount: number) => {
@@ -374,7 +379,8 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
             
             <p className="text-gray-700 mb-6">
               Are you sure you want to delete the internet data record for{' '}
-              <span className="font-semibold text-gray-900">{deleteConfirmation.recordDate}</span>?
+              <span className="font-semibold text-gray-900">{deleteConfirmation.recordDate}</span>{' '}
+              at <span className="font-semibold text-blue-600">{deleteConfirmation.recordOffice}</span>?
             </p>
             
             <div className="flex justify-end gap-3">
@@ -516,9 +522,9 @@ export const InternetMonitoringPage: React.FC<InternetMonitoringPageProps> = ({ 
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
               />
-              {!editingId && records.find(r => r.date === formData.date) && (
+              {!editingId && records.find(r => r.date === formData.date && officeNamesMatch(r.office, formData.office.trim())) && (
                 <p className="text-xs text-amber-600 mt-1">
-                  ⚠️ A record already exists for this date. It will be updated.
+                  ⚠️ A record already exists for this date and office. It will be updated.
                 </p>
               )}
             </div>
