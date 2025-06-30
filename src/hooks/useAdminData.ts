@@ -119,15 +119,15 @@ export const useAdminData = () => {
     }
   };
 
-  // Fetch deleted records with user emails using the new foreign key relationships
+  // Fetch deleted records with user emails using explicit foreign key relationships
   const fetchDeletedRecords = async () => {
     try {
       const { data, error } = await supabase
         .from('deleted_records')
         .select(`
           *,
-          user_profiles(email),
-          deleted_by_profile:user_profiles!deleted_records_deleted_by_profiles_fkey(email)
+          user_profiles!deleted_records_user_id_fkey(email),
+          deleted_by_profile:user_profiles!deleted_records_deleted_by_fkey(email)
         `)
         .order('deleted_at', { ascending: false });
 

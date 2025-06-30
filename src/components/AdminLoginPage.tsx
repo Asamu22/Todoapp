@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Shield, Lock, Mail, Eye, EyeOff, AlertTriangle } from 'lucide-react';
 import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
+import { supabase } from '../lib/supabase';
 
 interface AdminLoginPageProps {
   onSuccess: () => void;
