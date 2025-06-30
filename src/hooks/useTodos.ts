@@ -24,8 +24,14 @@ const convertRowToTodo = (row: TodoRow): Todo => ({
 
 // Helper function to handle JWT expired errors
 const handleJWTExpired = async (error: any) => {
-  if (error?.message?.includes('JWT expired') || error?.code === 'PGRST301') {
-    console.log('JWT expired, signing out user');
+  if (
+    error?.message?.includes('JWT expired') || 
+    error?.code === 'PGRST301' ||
+    error?.message?.includes('refresh_token_not_found') ||
+    error?.message?.includes('Invalid Refresh Token') ||
+    error?.code === 'refresh_token_not_found'
+  ) {
+    console.log('Authentication error detected, signing out user');
     await supabase.auth.signOut();
   }
 };
