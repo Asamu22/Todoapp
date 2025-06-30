@@ -14,6 +14,7 @@ const convertUserProfile = (row: UserProfileRow): UserProfile => ({
   email: row.email || '',
   fullName: row.full_name || '',
   isAdmin: row.is_admin || false,
+  isSuperAdmin: row.is_super_admin || false,
   createdAt: new Date(row.created_at),
   updatedAt: new Date(row.updated_at),
   lastLogin: row.last_login ? new Date(row.last_login) : undefined

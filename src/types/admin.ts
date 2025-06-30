@@ -4,6 +4,7 @@ export interface UserProfile {
   email: string;
   fullName: string;
   isAdmin: boolean;
+  isSuperAdmin: boolean;
   createdAt: Date;
   updatedAt: Date;
   lastLogin?: Date;

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CheckSquare, Bell, LogOut, Download, Wifi, Menu, X, Home, ChevronLeft, ChevronRight, Shield } from 'lucide-react';
 import { useAdminData } from '../hooks/useAdminData';
+import { AdminLoginPage } from './AdminLoginPage';
 
 interface SideNavProps {
   currentView: 'tasks' | 'export' | 'internet' | 'admin';
@@ -13,6 +14,7 @@ export const SideNav: React.FC<SideNavProps> = ({ currentView, onNavigate, onLog
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [showAdminLogin, setShowAdminLogin] = useState(false);
   const { checkAdminStatus } = useAdminData();
 
   // Check admin status on mount
@@ -47,18 +49,38 @@ export const SideNav: React.FC<SideNavProps> = ({ currentView, onNavigate, onLog
       label: 'Internet',
       icon: Wifi,
       description: 'Monitor internet usage'
-    },
-    ...(isAdmin ? [{
+    }
+  ];
+
+  // Add admin option for all users (will show login if not admin)
+  const allNavigationItems = [
+    ...navigationItems,
+    {
       id: 'admin' as const,
       label: 'Admin',
       icon: Shield,
-      description: 'Admin dashboard'
-    }] : [])
+      description: isAdmin ? 'Admin dashboard' : 'Admin access'
+    }
   ];
 
   const handleNavigation = (view: 'tasks' | 'export' | 'internet' | 'admin') => {
+    if (view === 'admin' && !isAdmin) {
+      setShowAdminLogin(true);
+      return;
+    }
+    
     onNavigate(view);
     setIsMobileOpen(false);
+  };
+
+  const handleAdminLoginSuccess = async () => {
+    setShowAdminLogin(false);
+    // Recheck admin status
+    const adminStatus = await checkAdminStatus();
+    setIsAdmin(adminStatus);
+    if (adminStatus) {
+      onNavigate('admin');
+    }
   };
 
   const handleCollapse = () => {
@@ -67,6 +89,14 @@ export const SideNav: React.FC<SideNavProps> = ({ currentView, onNavigate, onLog
 
   return (
     <>
+      {/* Admin Login Modal */}
+      {showAdminLogin && (
+        <AdminLoginPage
+          onSuccess={handleAdminLoginSuccess}
+          onCancel={() => setShowAdminLogin(false)}
+        />
+      )}
+
       {/* Mobile Menu Button */}
       <button
         onClick={() => setIsMobileOpen(true)}
@@ -128,9 +158,10 @@ export const SideNav: React.FC<SideNavProps> = ({ currentView, onNavigate, onLog
         {/* Navigation Items */}
         <nav className="flex-1 p-4">
           <div className="space-y-2">
-            {navigationItems.map((item) => {
+            {allNavigationItems.map((item) => {
               const Icon = item.icon;
               const isActive = currentView === item.id;
+              const isAdminItem = item.id === 'admin';
               
               return (
                 <button
@@ -143,20 +174,26 @@ export const SideNav: React.FC<SideNavProps> = ({ currentView, onNavigate, onLog
                       : 'flex items-center gap-3 px-3 py-3'
                     }
                     ${isActive
-                      ? item.id === 'admin' 
+                      ? isAdminItem 
                         ? 'bg-red-100 text-red-700 shadow-sm'
                         : 'bg-blue-100 text-blue-700 shadow-sm'
-                      : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
+                      : isAdminItem
+                        ? 'text-gray-600 hover:text-red-600 hover:bg-red-50'
+                        : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
                     }
                   `}
                   title={isCollapsed ? item.label : ''}
                 >
                   <Icon className={`w-5 h-5 flex-shrink-0 ${isCollapsed ? 'mx-auto' : ''} ${
-                    item.id === 'admin' && isActive ? 'text-red-600' : ''
+                    isAdminItem && isActive ? 'text-red-600' : ''
                   }`} />
                   <div className={`transition-opacity duration-200 ${isCollapsed ? 'opacity-0 w-0 overflow-hidden absolute' : 'opacity-100'}`}>
                     <div className="font-medium">{item.label}</div>
-                    <div className="text-xs text-gray-500 group-hover:text-blue-500">
+                    <div className={`text-xs ${
+                      isAdminItem 
+                        ? 'text-gray-500 group-hover:text-red-500'
+                        : 'text-gray-500 group-hover:text-blue-500'
+                    }`}>
                       {item.description}
                     </div>
                   </div>

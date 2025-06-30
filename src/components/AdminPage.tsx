@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Shield, Users, Activity, Trash2, BarChart3, Eye, RotateCcw, AlertTriangle, Calendar, Clock, Database, User, FileText } from 'lucide-react';
+import { Shield, Users, Activity, Trash2, BarChart3, Eye, RotateCcw, AlertTriangle, Calendar, Clock, Database, User, FileText, UserPlus, UserMinus } from 'lucide-react';
 import { useAdminData } from '../hooks/useAdminData';
 import { DeletedRecord, AuditLog } from '../types/admin';
+import { supabase } from '../lib/supabase';
 
 interface AdminPageProps {
   onBack: () => void;
@@ -16,13 +17,17 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBack }) => {
     loading,
     error,
     restoreRecord,
-    permanentlyDeleteRecord
+    permanentlyDeleteRecord,
+    refetch
   } = useAdminData();
 
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'audit' | 'trash'>('overview');
   const [selectedTable, setSelectedTable] = useState<'all' | 'todos' | 'internet_records'>('all');
   const [restoring, setRestoring] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [promotingUser, setPromotingUser] = useState<string | null>(null);
+  const [demotingUser, setDemotingUser] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   if (loading) {
     return (
@@ -55,10 +60,12 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBack }) => {
 
   const handleRestore = async (record: DeletedRecord) => {
     setRestoring(record.id);
+    setActionError(null);
     try {
       await restoreRecord(record);
     } catch (err) {
       console.error('Failed to restore record:', err);
+      setActionError('Failed to restore record');
     } finally {
       setRestoring(null);
     }
@@ -70,12 +77,60 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBack }) => {
     }
 
     setDeleting(recordId);
+    setActionError(null);
     try {
       await permanentlyDeleteRecord(recordId);
     } catch (err) {
       console.error('Failed to permanently delete record:', err);
+      setActionError('Failed to permanently delete record');
     } finally {
       setDeleting(null);
+    }
+  };
+
+  const handlePromoteUser = async (userEmail: string) => {
+    if (!confirm(`Are you sure you want to promote ${userEmail} to admin?`)) {
+      return;
+    }
+
+    setPromotingUser(userEmail);
+    setActionError(null);
+    try {
+      const { error } = await supabase.rpc('promote_user_to_admin', {
+        target_email: userEmail
+      });
+
+      if (error) throw error;
+      
+      await refetch();
+    } catch (err) {
+      console.error('Failed to promote user:', err);
+      setActionError(err instanceof Error ? err.message : 'Failed to promote user');
+    } finally {
+      setPromotingUser(null);
+    }
+  };
+
+  const handleDemoteUser = async (userEmail: string) => {
+    if (!confirm(`Are you sure you want to remove admin privileges from ${userEmail}?`)) {
+      return;
+    }
+
+    setDemotingUser(userEmail);
+    setActionError(null);
+    try {
+      const { error } = await supabase.rpc('demote_admin_user', {
+        target_email: userEmail
+      });
+
+      if (error) throw error;
+      
+      await refetch();
+    } catch (err) {
+      console.error('Failed to demote user:', err);
+      setActionError(err instanceof Error ? err.message : 'Failed to demote user');
+    } finally {
+      setDemotingUser(null);
     }
   };
 
@@ -119,6 +174,16 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBack }) => {
           </h1>
         </div>
       </div>
+
+      {/* Action Error Display */}
+      {actionError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5 text-red-600" />
+            <p className="text-red-600">{actionError}</p>
+          </div>
+        </div>
+      )}
 
       {/* Navigation Tabs */}
       <div className="bg-white rounded-xl shadow-lg mb-8">
@@ -235,6 +300,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBack }) => {
                   <th className="text-left py-3 px-4 font-medium text-gray-700">Role</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-700">Last Login</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-700">Joined</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-700">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -250,13 +316,17 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBack }) => {
                     </td>
                     <td className="py-3 px-4 text-gray-600">{user.email}</td>
                     <td className="py-3 px-4">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        user.isAdmin 
-                          ? 'bg-red-100 text-red-800' 
-                          : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {user.isAdmin ? 'Admin' : 'User'}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          user.isSuperAdmin
+                            ? 'bg-purple-100 text-purple-800'
+                            : user.isAdmin 
+                              ? 'bg-red-100 text-red-800' 
+                              : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {user.isSuperAdmin ? 'Super Admin' : user.isAdmin ? 'Admin' : 'User'}
+                        </span>
+                      </div>
                     </td>
                     <td className="py-3 px-4 text-gray-600">
                       {user.lastLogin 
@@ -266,6 +336,41 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBack }) => {
                     </td>
                     <td className="py-3 px-4 text-gray-600">
                       {new Date(user.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-2">
+                        {!user.isSuperAdmin && (
+                          <>
+                            {!user.isAdmin ? (
+                              <button
+                                onClick={() => handlePromoteUser(user.email)}
+                                disabled={promotingUser === user.email}
+                                className="p-1 text-green-600 hover:bg-green-50 rounded transition-colors disabled:opacity-50"
+                                title="Promote to admin"
+                              >
+                                {promotingUser === user.email ? (
+                                  <div className="w-4 h-4 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
+                                ) : (
+                                  <UserPlus className="w-4 h-4" />
+                                )}
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleDemoteUser(user.email)}
+                                disabled={demotingUser === user.email}
+                                className="p-1 text-orange-600 hover:bg-orange-50 rounded transition-colors disabled:opacity-50"
+                                title="Remove admin privileges"
+                              >
+                                {demotingUser === user.email ? (
+                                  <div className="w-4 h-4 border-2 border-orange-600 border-t-transparent rounded-full animate-spin" />
+                                ) : (
+                                  <UserMinus className="w-4 h-4" />
+                                )}
+                              </button>
+                            )}
+                          </>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}

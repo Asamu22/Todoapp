@@ -93,6 +93,7 @@ export interface Database {
           email: string | null;
           full_name: string | null;
           is_admin: boolean | null;
+          is_super_admin: boolean | null;
           created_at: string;
           updated_at: string;
           last_login: string | null;
@@ -103,6 +104,7 @@ export interface Database {
           email?: string | null;
           full_name?: string | null;
           is_admin?: boolean | null;
+          is_super_admin?: boolean | null;
           created_at?: string;
           updated_at?: string;
           last_login?: string | null;
@@ -113,6 +115,7 @@ export interface Database {
           email?: string | null;
           full_name?: string | null;
           is_admin?: boolean | null;
+          is_super_admin?: boolean | null;
           created_at?: string;
           updated_at?: string;
           last_login?: string | null;
