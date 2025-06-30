@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { CheckSquare, Bell, LogOut, Download, Wifi, Menu, X, Home, ChevronLeft, ChevronRight } from 'lucide-react';
+import { CheckSquare, Bell, LogOut, Download, Wifi, Menu, X, Home, ChevronLeft, ChevronRight, Shield } from 'lucide-react';
+import { useAdminData } from '../hooks/useAdminData';
 
 interface SideNavProps {
-  currentView: 'tasks' | 'export' | 'internet';
-  onNavigate: (view: 'tasks' | 'export' | 'internet') => void;
+  currentView: 'tasks' | 'export' | 'internet' | 'admin';
+  onNavigate: (view: 'tasks' | 'export' | 'internet' | 'admin') => void;
   onLogout: () => void;
   onCollapseChange: (collapsed: boolean) => void;
 }
@@ -11,6 +12,17 @@ interface SideNavProps {
 export const SideNav: React.FC<SideNavProps> = ({ currentView, onNavigate, onLogout, onCollapseChange }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const { checkAdminStatus } = useAdminData();
+
+  // Check admin status on mount
+  useEffect(() => {
+    const checkAdmin = async () => {
+      const adminStatus = await checkAdminStatus();
+      setIsAdmin(adminStatus);
+    };
+    checkAdmin();
+  }, [checkAdminStatus]);
 
   // Notify parent component when collapse state changes
   useEffect(() => {
@@ -35,10 +47,16 @@ export const SideNav: React.FC<SideNavProps> = ({ currentView, onNavigate, onLog
       label: 'Internet',
       icon: Wifi,
       description: 'Monitor internet usage'
-    }
+    },
+    ...(isAdmin ? [{
+      id: 'admin' as const,
+      label: 'Admin',
+      icon: Shield,
+      description: 'Admin dashboard'
+    }] : [])
   ];
 
-  const handleNavigation = (view: 'tasks' | 'export' | 'internet') => {
+  const handleNavigation = (view: 'tasks' | 'export' | 'internet' | 'admin') => {
     onNavigate(view);
     setIsMobileOpen(false);
   };
@@ -125,13 +143,17 @@ export const SideNav: React.FC<SideNavProps> = ({ currentView, onNavigate, onLog
                       : 'flex items-center gap-3 px-3 py-3'
                     }
                     ${isActive
-                      ? 'bg-blue-100 text-blue-700 shadow-sm'
+                      ? item.id === 'admin' 
+                        ? 'bg-red-100 text-red-700 shadow-sm'
+                        : 'bg-blue-100 text-blue-700 shadow-sm'
                       : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
                     }
                   `}
                   title={isCollapsed ? item.label : ''}
                 >
-                  <Icon className={`w-5 h-5 flex-shrink-0 ${isCollapsed ? 'mx-auto' : ''}`} />
+                  <Icon className={`w-5 h-5 flex-shrink-0 ${isCollapsed ? 'mx-auto' : ''} ${
+                    item.id === 'admin' && isActive ? 'text-red-600' : ''
+                  }`} />
                   <div className={`transition-opacity duration-200 ${isCollapsed ? 'opacity-0 w-0 overflow-hidden absolute' : 'opacity-100'}`}>
                     <div className="font-medium">{item.label}</div>
                     <div className="text-xs text-gray-500 group-hover:text-blue-500">
