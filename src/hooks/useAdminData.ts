@@ -71,7 +71,7 @@ export const useAdminData = () => {
         .from('user_profiles')
         .select('is_admin')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       return data?.is_admin || false;
