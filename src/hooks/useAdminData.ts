@@ -105,7 +105,7 @@ export const useAdminData = () => {
         .from('audit_logs')
         .select(`
           *,
-          user_profiles!audit_logs_user_id_fkey(email)
+          user_profiles(email)
         `)
         .order('created_at', { ascending: false })
         .limit(limit);
