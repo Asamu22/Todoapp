@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { CheckSquare, Bell, LogOut, Download, Wifi, Menu, X, Home, ChevronLeft, ChevronRight, Shield } from 'lucide-react';
-import { useAdminData } from '../hooks/useAdminData';
-import { AdminLoginPage } from './AdminLoginPage';
+import { CheckSquare, Bell, LogOut, Download, Wifi, Menu, X, Home, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface SideNavProps {
-  currentView: 'tasks' | 'export' | 'internet' | 'admin';
-  onNavigate: (view: 'tasks' | 'export' | 'internet' | 'admin') => void;
+  currentView: 'tasks' | 'export' | 'internet';
+  onNavigate: (view: 'tasks' | 'export' | 'internet') => void;
   onLogout: () => void;
   onCollapseChange: (collapsed: boolean) => void;
 }
@@ -13,18 +11,7 @@ interface SideNavProps {
 export const SideNav: React.FC<SideNavProps> = ({ currentView, onNavigate, onLogout, onCollapseChange }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [showAdminLogin, setShowAdminLogin] = useState(false);
-  const { checkAdminStatus } = useAdminData();
 
-  // Check admin status on mount
-  useEffect(() => {
-    const checkAdmin = async () => {
-      const adminStatus = await checkAdminStatus();
-      setIsAdmin(adminStatus);
-    };
-    checkAdmin();
-  }, [checkAdminStatus]);
 
   // Notify parent component when collapse state changes
   useEffect(() => {
@@ -33,55 +20,30 @@ export const SideNav: React.FC<SideNavProps> = ({ currentView, onNavigate, onLog
 
   const navigationItems = [
     {
-      id: 'tasks' as const,
+      id: 'tasks',
       label: 'Tasks',
       icon: Home,
       description: 'Manage your daily tasks'
     },
     {
-      id: 'export' as const,
+      id: 'export',
       label: 'Export',
       icon: Download,
       description: 'Export task data'
     },
     {
-      id: 'internet' as const,
+      id: 'internet',
       label: 'Internet',
       icon: Wifi,
       description: 'Monitor internet usage'
     }
   ];
 
-  // Add admin option for all users (will show login if not admin)
-  const allNavigationItems = [
-    ...navigationItems,
-    {
-      id: 'admin' as const,
-      label: 'Admin',
-      icon: Shield,
-      description: isAdmin ? 'Admin dashboard' : 'Admin access'
-    }
-  ];
-
-  const handleNavigation = (view: 'tasks' | 'export' | 'internet' | 'admin') => {
-    if (view === 'admin' && !isAdmin) {
-      setShowAdminLogin(true);
-      return;
-    }
-    
+  const handleNavigation = (view: 'tasks' | 'export' | 'internet') => {
     onNavigate(view);
     setIsMobileOpen(false);
   };
 
-  const handleAdminLoginSuccess = async () => {
-    setShowAdminLogin(false);
-    // Recheck admin status
-    const adminStatus = await checkAdminStatus();
-    setIsAdmin(adminStatus);
-    if (adminStatus) {
-      onNavigate('admin');
-    }
-  };
 
   const handleCollapse = () => {
     setIsCollapsed(!isCollapsed);
@@ -89,13 +51,6 @@ export const SideNav: React.FC<SideNavProps> = ({ currentView, onNavigate, onLog
 
   return (
     <>
-      {/* Admin Login Modal */}
-      {showAdminLogin && (
-        <AdminLoginPage
-          onSuccess={handleAdminLoginSuccess}
-          onCancel={() => setShowAdminLogin(false)}
-        />
-      )}
 
       {/* Mobile Menu Button */}
       <button
@@ -158,15 +113,14 @@ export const SideNav: React.FC<SideNavProps> = ({ currentView, onNavigate, onLog
         {/* Navigation Items */}
         <nav className="flex-1 p-4">
           <div className="space-y-2">
-            {allNavigationItems.map((item) => {
+            {navigationItems.map((item) => {
               const Icon = item.icon;
               const isActive = currentView === item.id;
-              const isAdminItem = item.id === 'admin';
               
               return (
                 <button
                   key={item.id}
-                  onClick={() => handleNavigation(item.id)}
+                  onClick={() => handleNavigation(item.id as any)}
                   className={`
                     w-full rounded-lg text-left transition-all duration-200 group relative
                     ${isCollapsed 
@@ -174,26 +128,16 @@ export const SideNav: React.FC<SideNavProps> = ({ currentView, onNavigate, onLog
                       : 'flex items-center gap-3 px-3 py-3'
                     }
                     ${isActive
-                      ? isAdminItem 
-                        ? 'bg-red-100 text-red-700 shadow-sm'
-                        : 'bg-blue-100 text-blue-700 shadow-sm'
-                      : isAdminItem
-                        ? 'text-gray-600 hover:text-red-600 hover:bg-red-50'
-                        : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
+                      ? 'bg-blue-100 text-blue-700 shadow-sm'
+                      : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
                     }
                   `}
                   title={isCollapsed ? item.label : ''}
                 >
-                  <Icon className={`w-5 h-5 flex-shrink-0 ${isCollapsed ? 'mx-auto' : ''} ${
-                    isAdminItem && isActive ? 'text-red-600' : ''
-                  }`} />
+                  <Icon className={`w-5 h-5 flex-shrink-0 ${isCollapsed ? 'mx-auto' : ''}`} />
                   <div className={`transition-opacity duration-200 ${isCollapsed ? 'opacity-0 w-0 overflow-hidden absolute' : 'opacity-100'}`}>
                     <div className="font-medium">{item.label}</div>
-                    <div className={`text-xs ${
-                      isAdminItem 
-                        ? 'text-gray-500 group-hover:text-red-500'
-                        : 'text-gray-500 group-hover:text-blue-500'
-                    }`}>
+                    <div className="text-xs text-gray-500 group-hover:text-blue-500">
                       {item.description}
                     </div>
                   </div>

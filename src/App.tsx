@@ -8,7 +8,6 @@ import { AuthPage } from './components/AuthPage';
 import { SideNav } from './components/SideNav';
 import { ExportPage } from './components/ExportPage';
 import { InternetMonitoringPage } from './components/InternetMonitoringPage';
-import { AdminPage } from './components/AdminPage';
 import { useNotifications } from './hooks/useNotifications';
 import { useSupabaseAuth } from './hooks/useSupabaseAuth';
 import { useTodos } from './hooks/useTodos';
@@ -22,7 +21,7 @@ function App() {
   const [selectedPriority, setSelectedPriority] = useState('All');
   const [showCompleted, setShowCompleted] = useState(true);
   const [dateFilter, setDateFilter] = useState('all');
-  const [currentView, setCurrentView] = useState<'tasks' | 'export' | 'internet' | 'admin'>('tasks');
+  const [currentView, setCurrentView] = useState<'tasks' | 'export' | 'internet'>('tasks');
   const [sideNavCollapsed, setSideNavCollapsed] = useState(false);
 
   // Enable notifications only when authenticated
@@ -228,11 +227,6 @@ function App() {
           </div>
         )}
 
-        {currentView === 'admin' && (
-          <div className="min-h-screen">
-            <AdminPage onBack={() => setCurrentView('tasks')} />
-          </div>
-        )}
 
         {currentView === 'tasks' && (
           <div className="container mx-auto px-4 py-8 max-w-7xl">
