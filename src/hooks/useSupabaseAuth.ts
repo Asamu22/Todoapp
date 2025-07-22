@@ -211,7 +211,7 @@ export const useSupabaseAuth = () => {
     
     return () => clearInterval(interval);
   }, [user, sessionChecked]);
-  const signUp = async (email: string, password: string) => {
+  const signUp = async (email: string, password: string, fullName?: string) => {
     try {
       setError(null);
       debugLog('Attempting sign up', { email });
@@ -219,11 +219,23 @@ export const useSupabaseAuth = () => {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: {
+            full_name: fullName || email.split('@')[0], // Use provided name or email prefix
+          }
+        }
       });
       
       if (error) {
         debugLog('Sign up error', error);
         throw error;
+      }
+      
+      // Check if user was created successfully
+      if (data.user && !data.user.email_confirmed_at) {
+        debugLog('Sign up successful - email confirmation required', { userId: data.user?.id });
+        // For development, we might want to handle unconfirmed users differently
+        return data;
       }
       
       debugLog('Sign up successful', { userId: data.user?.id });

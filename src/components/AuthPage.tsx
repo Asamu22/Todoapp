@@ -7,6 +7,7 @@ export const AuthPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [fullName, setFullName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -29,7 +30,7 @@ export const AuthPage: React.FC = () => {
           setLocalError('Password must be at least 6 characters long');
           return;
         }
-        await signUp(email, password);
+        await signUp(email, password, fullName.trim() || undefined);
         setLocalError('Check your email for the confirmation link!');
       } else {
         await signIn(email, password);
@@ -86,6 +87,25 @@ export const AuthPage: React.FC = () => {
                 />
               </div>
             </div>
+
+            {isSignUp && (
+              <div>
+                <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-2">
+                  Full Name (Optional)
+                </label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    id="fullName"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    placeholder="Enter your full name"
+                  />
+                </div>
+              </div>
+            )}
 
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
@@ -181,6 +201,7 @@ export const AuthPage: React.FC = () => {
                   setEmail('');
                   setPassword('');
                   setConfirmPassword('');
+                  setFullName('');
                 }}
                 className="text-blue-600 hover:text-blue-700 font-medium"
               >
